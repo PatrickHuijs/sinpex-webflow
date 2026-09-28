@@ -47,6 +47,7 @@ build.js        bundles src/ in load order
 | modules/bunny-player.js | Bunny MP4 player (Section / Hero video) | Global Custom Code embed |
 | modules/layer-stack.js | Section / Layers partial sticky stack | Section / Layers embed |
 | modules/fade-slider.js | Section / Testimonials fade slider | Section / Testimonials embed |
+| modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
 
 ## Working on a script
 

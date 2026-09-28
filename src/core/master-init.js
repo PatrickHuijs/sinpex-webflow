@@ -24,7 +24,8 @@ function initPageScripts() {
     initParallaxImages,
     initBackToTop,
     initLogoWallCycle,
-    initCardStack
+    initCardStack,
+    initCapabilityTable
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
