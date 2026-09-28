@@ -57,11 +57,17 @@ build.js        bundles src/ in load order
 
 ## Releasing to the site
 
-jsDelivr caches branches, so the site loads a version tag.
+The site loads the bundle pinned to a commit, so jsDelivr serves an immutable file and a publish never picks up half-finished work.
 
-1. Bump `version` in `package.json` and run `npm run build`.
-2. Commit, then tag: `git tag v1.0.1 && git push --tags`.
-3. In Webflow footer custom code, change `@v1.0.0` to the new tag and publish.
+```
+https://cdn.jsdelivr.net/gh/PatrickHuijs/sinpex-webflow@<commit>/dist/sinpex.min.js
+```
+
+1. Bump `version` in `package.json`, run `npm run build`, commit and push.
+2. Copy the full commit hash (`git rev-parse HEAD`).
+3. In Webflow footer custom code, replace the hash in the script URL and publish.
+
+Prefer tags? Create a release in GitHub (e.g. `v1.0.1`) and use `@v1.0.1` in the URL instead of the hash.
 
 Testing without a release: point the footer at `@main` temporarily, then purge the cache at
 `https://purge.jsdelivr.net/gh/PatrickHuijs/sinpex-webflow@main/dist/sinpex.min.js`.
