@@ -41,6 +41,8 @@
 .bunny-lightbox-player__big-btn{-webkit-backdrop-filter:blur(1em);backdrop-filter:blur(1em)}
 .bunny-lightbox-player__interface-bottom{padding:min(2em,4vw)}
 .bunny-lightbox-player__timeline-progress,.bunny-lightbox-player__timeline-buffered{transform:translateX(-100%)}
+/* Hero video player: timeline starts empty before the script runs */
+.bunny-player__timeline-progress,.bunny-player__timeline-buffered{transform:translateX(-100%)}
 .bunny-lightbox-player__timeline-handle{transform:translate(-50%,-50%) scale(0);transition:transform .2s ease}
 .bunny-lightbox-player__timeline:hover .bunny-lightbox-player__timeline-handle,
 [data-player-dragging="true"] .bunny-lightbox-player__timeline-handle{transform:translate(-50%,-50%) scale(1)}

@@ -50,6 +50,11 @@
       var timeProgressEls = player.querySelectorAll('[data-player-time-progress]');
       var before = player.querySelector('[data-player-before]');
 
+      // Start the timeline empty (also covered in CSS for the moment before this runs)
+      if (progressBar) progressBar.style.transform = 'translateX(-100%)';
+      if (bufferedBar) bufferedBar.style.transform = 'translateX(-100%)';
+      if (handle) handle.style.left = '0%';
+
       // Flags
       var updateSize = player.getAttribute('data-player-update-size'); // "true" | "cover" | "false"
       var lazyMode = player.getAttribute('data-player-lazy');          // "true" | "meta" | "false"
