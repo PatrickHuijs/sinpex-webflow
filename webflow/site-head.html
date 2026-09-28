@@ -1,0 +1,64 @@
+<link rel="dns-prefetch" href="https://assets.website-files.com">
+<link rel="preconnect" href="https://assets.website-files.com" crossorigin>
+
+<!-- CSS (scripts live in GitHub: dist/sinpex.min.js, loaded in the footer) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.2.3/dist/lenis.css">
+
+<style>
+
+.button_icon-wrp.is-masked {
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+.button_icon-wrp.is-masked .button_icon {
+ opacity: 0;
+}
+
+.wf-design-mode [data-split="heading"],
+.w-editor [data-split="heading"]{
+  visibility: visible !important;
+}
+
+</style>
+
+<!-- SLIDER VIDEO PREVIEW + OSMO BUNNY LIGHTBOX (MP4) -->
+<style>
+[data-slider-video-src=""],
+[data-bunny-lightbox-control="open"][data-bunny-lightbox-src=""]{display:none}
+.testimonial-card_video-el{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease}
+.testimonial-card_video.is-playing .testimonial-card_video-el{opacity:1}
+
+.bunny-lightbox{transition:opacity .4s cubic-bezier(.625,.05,0,1),visibility 0s linear .4s}
+.bunny-lightbox[data-bunny-lightbox-status="active"]{opacity:1;visibility:visible;transition:opacity .4s cubic-bezier(.625,.05,0,1),visibility 0s}
+.bunny-lightbox__calc{display:flex;justify-content:center;align-items:center}
+.bunny-lightbox__close{border:0}
+.bunny-lightbox__close-bar{transform:rotate(-45deg)}
+.bunny-lightbox__close-bar.is--duplicate{transform:rotate(45deg)}
+.bunny-lightbox-player{isolation:isolate;-webkit-mask-image:radial-gradient(white,black);mask-image:radial-gradient(white,black);transform:scale(.96);transition:transform .6s cubic-bezier(.625,.05,0,1)}
+.bunny-lightbox[data-bunny-lightbox-status="active"] .bunny-lightbox-player{transform:scale(1)}
+.bunny-lightbox-player__video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;background-color:#000}
+.bunny-lightbox-player__big-btn{-webkit-backdrop-filter:blur(1em);backdrop-filter:blur(1em)}
+.bunny-lightbox-player__interface-bottom{padding:min(2em,4vw)}
+.bunny-lightbox-player__timeline-progress,.bunny-lightbox-player__timeline-buffered{transform:translateX(-100%)}
+.bunny-lightbox-player__timeline-handle{transform:translate(-50%,-50%) scale(0);transition:transform .2s ease}
+.bunny-lightbox-player__timeline:hover .bunny-lightbox-player__timeline-handle,
+[data-player-dragging="true"] .bunny-lightbox-player__timeline-handle{transform:translate(-50%,-50%) scale(1)}
+.bunny-lightbox-player__playpause,.bunny-lightbox-player__interface{transition:opacity .3s ease}
+.bunny-lightbox-player__loading{visibility:hidden;pointer-events:none;transition:opacity .3s ease,visibility .3s ease}
+[data-player-status="loading"] .bunny-lightbox-player__loading{opacity:1;visibility:visible}
+[data-player-status="playing"] .bunny-lightbox-player__pause-svg,
+[data-player-status="loading"] .bunny-lightbox-player__pause-svg{display:block}
+[data-player-status="playing"] .bunny-lightbox-player__play-svg,
+[data-player-status="loading"] .bunny-lightbox-player__play-svg{display:none}
+[data-player-status="playing"] .bunny-lightbox-player__playpause,
+[data-player-status="loading"] .bunny-lightbox-player__playpause{opacity:0}
+[data-player-activated="false"] .bunny-lightbox-player__interface{opacity:0;visibility:hidden}
+[data-player-status="playing"][data-player-hover="idle"] .bunny-lightbox-player__interface{opacity:0}
+[data-player-status="playing"][data-player-hover="idle"]{cursor:none}
+[data-player-muted="true"] .bunny-lightbox-player__volume-up-svg{display:none}
+[data-player-muted="true"] .bunny-lightbox-player__volume-mute-svg{display:block}
+[data-player-fullscreen="true"] .bunny-lightbox-player__fullscreen-scale-svg{display:none}
+[data-player-fullscreen="true"] .bunny-lightbox-player__fullscreen-shrink-svg{display:block}
+[data-player-fullscreen="true"]{border-radius:0}
+</style>
