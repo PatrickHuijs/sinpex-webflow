@@ -64,7 +64,7 @@ jsDelivr caches branches, so the site loads a version tag.
 3. In Webflow footer custom code, change `@v1.0.0` to the new tag and publish.
 
 Testing without a release: point the footer at `@main` temporarily, then purge the cache at
-`https://purge.jsdelivr.net/gh/OWNER/sinpex-webflow@main/dist/sinpex.min.js`.
+`https://purge.jsdelivr.net/gh/PatrickHuijs/sinpex-webflow@main/dist/sinpex.min.js`.
 
 ## Load order on the site
 
