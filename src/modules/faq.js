@@ -3,7 +3,7 @@
  * Markup: [data-faq-item] > button[data-faq-toggle] + [data-faq-answer]
  * The animation is CSS (grid-template-rows, 0.6s Osmo ease) in the Section / FAQ embed; this script only manages state and ARIA.
  * - The top item opens on load, without animating (transitions switch on via [data-faq-ready] one frame later).
- * - data-faq-close-siblings="true" on the toggle (Section / FAQ prop "One open at a time") closes the other items in the same list.
+ * - One open at a time is the default. data-faq-close-siblings="false" on the toggle (Section / FAQ prop "One open at a time" off) allows several open.
  */
 function initFaq() {
   const items = document.querySelectorAll("[data-faq-item]");
@@ -44,7 +44,8 @@ function initFaq() {
       toggle.addEventListener("click", function () {
         const open = toggle.getAttribute("aria-expanded") !== "true";
 
-        if (open && toggle.getAttribute("data-faq-close-siblings") === "true") {
+        const closeSiblings = (toggle.getAttribute("data-faq-close-siblings") || "").toLowerCase() !== "false";
+        if (open && closeSiblings) {
           list.querySelectorAll("[data-faq-toggle]").forEach(function (other) {
             if (other !== toggle) setOpen(other, false);
           });
