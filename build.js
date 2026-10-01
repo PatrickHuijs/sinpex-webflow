@@ -35,6 +35,7 @@ const order = [
   'src/modules/layer-stack.js',
   'src/modules/fade-slider.js',
   'src/modules/capability-table.js',
+  'src/modules/faq.js',
 
   'src/core/master-init.js'
 ];
