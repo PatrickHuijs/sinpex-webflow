@@ -50,7 +50,7 @@ build.js        bundles src/ in load order
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
 | modules/faq.js | Section / FAQ accordion: top item open, optional one-open-at-a-time, ARIA (CMS FAQs) | Section / FAQ embed |
 | modules/draggable-marquee.js | Section / Hero marquee: one-way draggable image marquee + horizontal image parallax | Section / Hero marquee embed |
-| modules/image-slider.js | Section / Image slider: centred looping image slider with progress bars, arrows, drag and keyboard (uses horizontalLoop) | Section / Image slider embed |
+| modules/image-slider.js | Section / Image slider + Section / Hero slider: centred looping image slider with progress bars, arrows, drag and keyboard (uses horizontalLoop). Optional autoplay via data-slider-autoplay="true" + data-slider-autoplay-duration, paused on hover over the track, keyboard focus, off screen; stop/start button for keyboard users | Section / Image slider + Section / Hero slider embeds |
 
 ## Working on a script
 
