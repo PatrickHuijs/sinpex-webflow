@@ -48,7 +48,7 @@ build.js        bundles src/ in load order
 | modules/layer-stack.js | Section / Layers partial sticky stack | Section / Layers embed |
 | modules/fade-slider.js | Section / Testimonials fade slider | Section / Testimonials embed |
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
-| modules/faq.js | Section / FAQ accordion state + ARIA (CMS FAQs) | Section / FAQ embed |
+| modules/faq.js | Section / FAQ accordion: top item open, optional one-open-at-a-time, ARIA (CMS FAQs) | Section / FAQ embed |
 
 ## Working on a script
 
