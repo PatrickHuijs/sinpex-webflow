@@ -28,7 +28,8 @@ function initPageScripts() {
     initCapabilityTable,
     initFaq,
     initDraggableMarquee,
-    initImageSlider
+    initImageSlider,
+    initResourceLibrary
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

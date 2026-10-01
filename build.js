@@ -38,6 +38,7 @@ const order = [
   'src/modules/faq.js',
   'src/modules/draggable-marquee.js',
   'src/modules/image-slider.js',
+  'src/modules/resource-library.js',
 
   'src/core/master-init.js'
 ];

@@ -2,6 +2,9 @@
  * Parallax images.
  */
 function initParallaxImages() {
+  // Reduced motion: images stay still
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
   gsap.utils.toArray('[data-img-parallax="trigger"][data-animation="true"]').forEach(trigger => {
     const target = trigger.querySelector('[data-img-parallax="target"]');
     if (!target) return;
