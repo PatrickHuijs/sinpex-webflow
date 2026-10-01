@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.4.0 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.4.1 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -2943,6 +2943,7 @@ function initDraggableMarquee() {
     let parallaxItems = [];
     const boost = { value: 1 };
     let visible = true;
+    let started = false;
 
     function build() {
       collection.querySelectorAll("[data-draggable-marquee-clone]").forEach((clone) => clone.remove());
@@ -2969,6 +2970,13 @@ function initDraggableMarquee() {
         left: item.offsetLeft,
         width: item.offsetWidth
       })).filter((entry) => entry.img);
+
+      // First build: start with the second image centred, as in the design
+      if (!started && parallaxItems[1]) {
+        const second = parallaxItems[1];
+        position = wrapperWidth / 2 - (second.left + second.width / 2);
+        started = true;
+      }
 
       render();
       return true;
