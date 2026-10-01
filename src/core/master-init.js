@@ -26,7 +26,8 @@ function initPageScripts() {
     initLogoWallCycle,
     initCardStack,
     initCapabilityTable,
-    initFaq
+    initFaq,
+    initDraggableMarquee
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

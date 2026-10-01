@@ -49,6 +49,7 @@ build.js        bundles src/ in load order
 | modules/fade-slider.js | Section / Testimonials fade slider | Section / Testimonials embed |
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
 | modules/faq.js | Section / FAQ accordion: top item open, optional one-open-at-a-time, ARIA (CMS FAQs) | Section / FAQ embed |
+| modules/draggable-marquee.js | Section / Hero marquee: one-way draggable image marquee + horizontal image parallax | Section / Hero marquee embed |
 
 ## Working on a script
 

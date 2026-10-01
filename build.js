@@ -36,6 +36,7 @@ const order = [
   'src/modules/fade-slider.js',
   'src/modules/capability-table.js',
   'src/modules/faq.js',
+  'src/modules/draggable-marquee.js',
 
   'src/core/master-init.js'
 ];
