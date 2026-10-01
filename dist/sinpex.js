@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.7.0 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.7.1 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3117,6 +3117,7 @@ function initDraggableMarquee() {
  *   Pauses on mouse hover over the slides (the track, not the controls), on keyboard focus inside the slider, off screen and in a hidden tab.
  *   The active progress bar fill (.image-slider_bar-fill) grows over the interval and pauses with it. Without autoplay the active bar shows full.
  *   Off with prefers-reduced-motion. A stop/start button is added for keyboard and screen reader users (WCAG 2.2.2).
+ * - Horizontal image parallax (opt-in): data-slider-parallax="5" on the wrapper. Off with prefers-reduced-motion.
  * CSS lives in the Section / Slider embed.
  */
 function initImageSlider() {
@@ -3205,6 +3206,28 @@ function initImageSlider() {
 
     loop.toIndex(0, { duration: 0 });
     setActive(0);
+
+    // Horizontal parallax (opt-in): each image drifts sideways inside its frame as its slide moves away from the centre.
+    // data-slider-parallax="5" = max shift in % of the image width; the image is wider than its frame (CSS) so edges never show.
+    const parallaxStrength = parseFloat(wrapper.getAttribute("data-slider-parallax")) || 0;
+    let parallaxTick = null;
+    if (parallaxStrength && !reduceMotion.matches) {
+      const pairs = slides
+        .map((slide) => ({ slide, img: slide.querySelector(".image-slider_img") }))
+        .filter((p) => p.img)
+        .map((p) => ({ ...p, setX: gsap.quickSetter(p.img, "xPercent") }));
+      parallaxTick = () => {
+        const box = wrapper.getBoundingClientRect();
+        if (box.bottom < 0 || box.top > window.innerHeight) return;
+        const centre = box.left + box.width / 2;
+        pairs.forEach(({ slide, setX }) => {
+          const r = slide.getBoundingClientRect();
+          const offset = gsap.utils.clamp(-1, 1, (r.left + r.width / 2 - centre) / r.width);
+          setX(-offset * parallaxStrength);
+        });
+      };
+      gsap.ticker.add(parallaxTick);
+    }
 
     const goTo = (index) => loop.toIndex(((index % total) + total) % total, ease());
     const onPrev = () => goTo(currentIndex - 1);
@@ -3303,6 +3326,7 @@ function initImageSlider() {
 
     pageCleanups.push(() => {
       stopTimer();
+      if (parallaxTick) gsap.ticker.remove(parallaxTick);
       if (observer) observer.disconnect();
       if (toggle) toggle.remove();
       track.removeEventListener("pointerenter", onPointerEnter);

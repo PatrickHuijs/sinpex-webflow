@@ -50,7 +50,7 @@ build.js        bundles src/ in load order
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
 | modules/faq.js | Section / FAQ accordion: top item open, optional one-open-at-a-time, ARIA (CMS FAQs) | Section / FAQ embed |
 | modules/draggable-marquee.js | Section / Hero marquee: one-way draggable image marquee + horizontal image parallax | Section / Hero marquee embed |
-| modules/image-slider.js | Section / Slider: centred looping image slider with growing progress bars, arrows, drag and keyboard (uses horizontalLoop). Optional autoplay via data-slider-autoplay="true" + data-slider-autoplay-duration; the active bar fills over the interval and pauses on hover over the track, keyboard focus, off screen; stop/start button for keyboard users | Section / Slider embed |
+| modules/image-slider.js | Section / Slider: centred looping image slider with horizontal image parallax (data-slider-parallax), growing progress bars, arrows, drag and keyboard (uses horizontalLoop). Optional autoplay via data-slider-autoplay="true" + data-slider-autoplay-duration; the active bar fills over the interval and pauses on hover over the track, keyboard focus, off screen; stop/start button for keyboard users | Section / Slider embed |
 | modules/resource-library.js | Section / Resources: type filter tabs (data-resources-filter) and client-side pagination (data-resources-per-page) for the Resources collection list; reads each card's [data-resource-type] text | Section / Resources embed |
 
 ## Working on a script
