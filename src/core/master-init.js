@@ -29,7 +29,8 @@ function initPageScripts() {
     initFaq,
     initDraggableMarquee,
     initImageSlider,
-    initResourceLibrary
+    initResourceLibrary,
+    initWebinarSlider
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

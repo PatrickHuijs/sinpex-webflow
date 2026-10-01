@@ -39,6 +39,7 @@ const order = [
   'src/modules/draggable-marquee.js',
   'src/modules/image-slider.js',
   'src/modules/resource-library.js',
+  'src/modules/webinar-slider.js',
 
   'src/core/master-init.js'
 ];
