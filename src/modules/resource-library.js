@@ -5,7 +5,7 @@
  *           [data-resources="list"][data-resources-per-page="4"] > [data-resources="item"] (each holds a Card / Resource)
  *           [data-resources="pagination"] (page buttons are built here), [data-resources="status"] (screen reader count)
  * - An item's type is read from the card's [data-resource-type] text, which is bound to the Type option field.
- * - Switching filter or page fades the list out and the new items in (staggered); instant with reduced motion.
+ * - Switching filter or page fades the list out and the new items in together; instant with reduced motion.
  * - Filtering resets to page 1. Paging scrolls back to the top of the library (instant with reduced motion).
  * - Pagination shows every page up to 5 pages, otherwise first, last and the pages around the current one with gaps.
  * CSS lives in the Section / Resources embed.
@@ -115,7 +115,7 @@ function initResourceLibrary() {
       }
     }
 
-    // Fade the list out, swap the items, fade the new items in (staggered). Instant with reduced motion.
+    // Fade the list out, swap the items, fade the new items in together. Instant with reduced motion.
     function swap(update, animate) {
       gsap.killTweensOf(list);
       gsap.killTweensOf(items);
@@ -135,7 +135,7 @@ function initResourceLibrary() {
           gsap.set(list, { opacity: 1 });
           gsap.fromTo(shown,
             { opacity: 0, y: "0.75rem" },
-            { opacity: 1, y: 0, duration: 0.45, ease: "power2.out", stagger: 0.06, clearProps: "opacity,transform" }
+            { opacity: 1, y: 0, duration: 0.45, ease: "power2.out", clearProps: "opacity,transform" }
           );
         }
       });
