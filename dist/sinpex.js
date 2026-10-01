@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.5.0 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.5.1 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -225,6 +225,9 @@ function initCardStack() {
 /* ===== src/modules/metrics-counter.js ===== */
 /*
  * Number odometer for metrics. CSS stays in Webflow.
+ * Each [data-odometer-element] rolls on its own when it scrolls into view (start "top 80%",
+ * override per counter or group with data-odometer-trigger-start).
+ * data-odometer-trigger="group" on a [data-odometer-group] makes that group roll together instead.
  */
 function initNumberOdometer() {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -293,24 +296,9 @@ function initNumberOdometer() {
       return { el, rollers, duration, step, revealData, originalText }
     })
 
-    const ordered = applyStaggerOrder(elementData, staggerOrder)
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: group,
-        start: triggerStart,
-        once: true
-      },
-      onComplete() {
-        elementData.forEach(({ el, originalText, step }) => {
-          cleanupElement(el, originalText)
-        })
-      }
-    })
-
-    ordered.forEach((data, orderIdx) => {
+    // Adds one counter's reveal + digit roll to a timeline at the given offset
+    const addCounter = (tl, data, offset) => {
       const { rollers, duration, step, revealData } = data
-      const offset = orderIdx * elementStagger
 
       revealData.forEach(({ el, widthEm }) => {
         tl.to(el, {
@@ -330,6 +318,34 @@ function initNumberOdometer() {
           force3D: true
         }, offset + reversedIdx * defaults.digitStagger)
       })
+    }
+
+    // Default: every counter is its own trigger and rolls when it scrolls into view.
+    // data-odometer-trigger="group" on the group restores the old behaviour (all at once, staggered).
+    if (group.getAttribute('data-odometer-trigger') === 'group') {
+      const ordered = applyStaggerOrder(elementData, staggerOrder)
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: group, start: triggerStart, once: true },
+        onComplete() {
+          elementData.forEach(({ el, originalText }) => cleanupElement(el, originalText))
+        }
+      })
+      ordered.forEach((data, orderIdx) => addCounter(tl, data, orderIdx * elementStagger))
+      return
+    }
+
+    elementData.forEach((data) => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: data.el,
+          start: data.el.getAttribute('data-odometer-trigger-start') || triggerStart,
+          once: true
+        },
+        onComplete() {
+          cleanupElement(data.el, data.originalText)
+        }
+      })
+      addCounter(tl, data, 0)
     })
   })
 
