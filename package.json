@@ -1,6 +1,6 @@
 {
   "name": "sinpex-webflow",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "private": true,
   "description": "Custom scripts for the Sinpex Webflow site, served via jsDelivr.",
   "scripts": {
