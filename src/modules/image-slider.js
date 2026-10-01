@@ -2,7 +2,8 @@
  * Section / Slider: centred, looping image slider with progress bars and prev/next buttons.
  * Markup: [data-image-slider="wrapper"] > .image-slider_track > [data-image-slider="slide"] (3 fixed + extra via slot)
  *         [data-image-slider="progress"] (bars are built here), [data-image-slider="prev"|"next"], [data-image-slider="status"]
- * - Uses horizontalLoop() from centered-slider.js (seamless loop, centred, draggable).
+ * - Uses horizontalLoop() from centered-slider.js (seamless loop, centred, draggable). The active slide is always centred
+ *   with a peek on both sides; under 5 slides, hidden copies are added so the peeks never drop out while sliding.
  * - Keyboard: left/right arrows while focus is inside the slider. Screen readers get "Image x of y" via the status element.
  * - Autoplay (opt-in, same attributes as the Proof slider): data-slider-autoplay="true" + data-slider-autoplay-duration="5" (seconds) on the wrapper.
  *   Pauses on mouse hover over the slides (the track, not the controls), on keyboard focus inside the slider, off screen and in a hidden tab.
@@ -47,6 +48,26 @@ function initImageSlider() {
       slide.querySelectorAll("img").forEach((img) => { img.draggable = false; });
     });
 
+    // A centred loop needs a slide for the left peek, the active one and the right peek at the same time, plus one
+    // coming in. With fewer than 5 slides, copies of the set are added (hidden from screen readers and keyboard).
+    const items = slides.slice();
+    const clones = [];
+    const host = slides[0].parentNode;
+    while (items.length < 5) {
+      slides.forEach((slide) => {
+        const copy = slide.cloneNode(true);
+        copy.setAttribute("data-image-slider-clone", "");
+        copy.setAttribute("aria-hidden", "true");
+        copy.setAttribute("inert", "");
+        copy.removeAttribute("id");
+        copy.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+        copy.querySelectorAll("img").forEach((img) => { img.draggable = false; });
+        host.appendChild(copy);
+        clones.push(copy);
+        items.push(copy);
+      });
+    }
+
     // One bar per slide, each with a fill that grows over the autoplay interval
     let bars = [];
     let fills = [];
@@ -65,7 +86,8 @@ function initImageSlider() {
       });
     }
 
-    let currentIndex = 0;
+    let currentIndex = 0; // real slide (0 .. total - 1)
+    let currentItem = 0; // position in the loop, clones included
     let timer = null;
     let hovering = false;
     let keyboardFocus = false;
@@ -74,21 +96,21 @@ function initImageSlider() {
     let toggle = null;
     let ready = false;
 
-    function setActive(index) {
-      const changed = index !== currentIndex || !ready;
-      currentIndex = index;
+    function setActive(itemIndex) {
+      const changed = itemIndex !== currentItem || !ready;
+      currentItem = itemIndex;
+      currentIndex = itemIndex % total;
+      items.forEach((item, i) => item.classList.toggle("is-active", i === itemIndex));
       slides.forEach((slide, i) => {
-        const active = i === index;
-        slide.classList.toggle("is-active", active);
-        slide.setAttribute("aria-hidden", active ? "false" : "true");
+        slide.setAttribute("aria-hidden", i === itemIndex ? "false" : "true");
       });
-      bars.forEach((bar, i) => bar.classList.toggle("is-active", i === index));
-      if (status) status.textContent = `Image ${index + 1} of ${total}`;
+      bars.forEach((bar, i) => bar.classList.toggle("is-active", i === currentIndex));
+      if (status) status.textContent = `Image ${currentIndex + 1} of ${total}`;
       // Any change (autoplay, buttons, drag, keys) gives the new slide a full interval
       if (changed && ready) startTimer();
     }
 
-    const loop = horizontalLoop(slides, {
+    const loop = horizontalLoop(items, {
       paused: true,
       draggable: true,
       center: true,
@@ -103,7 +125,7 @@ function initImageSlider() {
     const parallaxStrength = parseFloat(wrapper.getAttribute("data-slider-parallax")) || 0;
     let parallaxTick = null;
     if (parallaxStrength && !reduceMotion.matches) {
-      const pairs = slides
+      const pairs = items
         .map((slide) => ({ slide, img: slide.querySelector(".image-slider_img") }))
         .filter((p) => p.img)
         .map((p) => ({ ...p, setX: gsap.quickSetter(p.img, "xPercent") }));
@@ -120,9 +142,9 @@ function initImageSlider() {
       gsap.ticker.add(parallaxTick);
     }
 
-    const goTo = (index) => loop.toIndex(((index % total) + total) % total, ease());
-    const onPrev = () => goTo(currentIndex - 1);
-    const onNext = () => goTo(currentIndex + 1);
+    const goTo = (itemIndex) => loop.toIndex(itemIndex, ease());
+    const onPrev = () => goTo(currentItem - 1);
+    const onNext = () => goTo(currentItem + 1);
     const onKey = (e) => {
       if (e.key === "ArrowLeft") { e.preventDefault(); onPrev(); }
       if (e.key === "ArrowRight") { e.preventDefault(); onNext(); }
@@ -232,6 +254,8 @@ function initImageSlider() {
       if (typeof loop.removeResize === "function") loop.removeResize();
       if (loop.draggable) loop.draggable.kill();
       loop.kill();
+      clones.forEach((copy) => copy.remove());
+      gsap.set(slides, { clearProps: "transform" });
       delete wrapper.dataset.imageSliderReady;
     });
   });
