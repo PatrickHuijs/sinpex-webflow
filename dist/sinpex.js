@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.7.1 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.7.2 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3355,6 +3355,7 @@ function initImageSlider() {
  *           [data-resources="list"][data-resources-per-page="4"] > [data-resources="item"] (each holds a Card / Resource)
  *           [data-resources="pagination"] (page buttons are built here), [data-resources="status"] (screen reader count)
  * - An item's type is read from the card's [data-resource-type] text, which is bound to the Type option field.
+ * - Switching filter or page fades the list out and the new items in (staggered); instant with reduced motion.
  * - Filtering resets to page 1. Paging scrolls back to the top of the library (instant with reduced motion).
  * - Pagination shows every page up to 5 pages, otherwise first, last and the pages around the current one with gaps.
  * CSS lives in the Section / Resources embed.
@@ -3464,16 +3465,44 @@ function initResourceLibrary() {
       }
     }
 
-    function goToPage(n) {
-      page = n;
-      const { totalPages } = render();
-      announce(`Page ${page} of ${totalPages}`);
-      scrollToTop();
-      const current = pagination && pagination.querySelector('[aria-current="page"]');
-      if (current) current.focus({ preventScroll: true });
+    // Fade the list out, swap the items, fade the new items in (staggered). Instant with reduced motion.
+    function swap(update, animate) {
+      gsap.killTweensOf(list);
+      gsap.killTweensOf(items);
+      if (!animate || reduceMotion.matches) {
+        gsap.set(list, { clearProps: "opacity" });
+        gsap.set(items, { clearProps: "opacity,transform" });
+        update();
+        return;
+      }
+      gsap.to(list, {
+        opacity: 0,
+        duration: 0.2,
+        ease: "power1.out",
+        onComplete: () => {
+          update();
+          const shown = items.filter((item) => !item.hidden);
+          gsap.set(list, { opacity: 1 });
+          gsap.fromTo(shown,
+            { opacity: 0, y: "0.75rem" },
+            { opacity: 1, y: 0, duration: 0.45, ease: "power2.out", stagger: 0.06, clearProps: "opacity,transform" }
+          );
+        }
+      });
     }
 
-    function setFilter(value) {
+    function goToPage(n) {
+      page = n;
+      swap(() => {
+        const { totalPages } = render();
+        announce(`Page ${page} of ${totalPages}`);
+        const current = pagination && pagination.querySelector('[aria-current="page"]');
+        if (current) current.focus({ preventScroll: true });
+      }, true);
+      scrollToTop();
+    }
+
+    function setFilter(value, animate) {
       activeFilter = value;
       page = 1;
       filters.forEach((btn) => {
@@ -3481,13 +3510,15 @@ function initResourceLibrary() {
         btn.classList.toggle("is-active", on);
         btn.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      const { count } = render();
-      announce(`${count} ${count === 1 ? "resource" : "resources"} shown`);
+      swap(() => {
+        const { count } = render();
+        announce(`${count} ${count === 1 ? "resource" : "resources"} shown`);
+      }, animate);
     }
 
     const onFilterClick = (e) => {
       const btn = e.currentTarget;
-      setFilter((btn.getAttribute("data-resources-filter") || "all").trim().toLowerCase());
+      setFilter((btn.getAttribute("data-resources-filter") || "all").trim().toLowerCase(), true);
     };
     filters.forEach((btn) => {
       btn.setAttribute("aria-controls", list.id);
@@ -3501,6 +3532,9 @@ function initResourceLibrary() {
 
     pageCleanups.push(() => {
       filters.forEach((btn) => btn.removeEventListener("click", onFilterClick));
+      gsap.killTweensOf(list);
+      gsap.killTweensOf(items);
+      gsap.set([list, ...items], { clearProps: "opacity,transform" });
       items.forEach((item) => { item.hidden = false; });
       if (pagination) pagination.innerHTML = "";
       delete wrapper.dataset.resourcesReady;
