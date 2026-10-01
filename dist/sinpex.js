@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.6.0 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.6.1 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3105,15 +3105,16 @@ function initDraggableMarquee() {
 
 /* ===== src/modules/image-slider.js ===== */
 /*
- * Section / Image slider + Section / Hero slider: centred, looping image slider with progress bars and prev/next buttons.
+ * Section / Slider: centred, looping image slider with progress bars and prev/next buttons.
  * Markup: [data-image-slider="wrapper"] > .image-slider_track > [data-image-slider="slide"] (3 fixed + extra via slot)
  *         [data-image-slider="progress"] (bars are built here), [data-image-slider="prev"|"next"], [data-image-slider="status"]
  * - Uses horizontalLoop() from centered-slider.js (seamless loop, centred, draggable).
  * - Keyboard: left/right arrows while focus is inside the slider. Screen readers get "Image x of y" via the status element.
  * - Autoplay (opt-in, same attributes as the Proof slider): data-slider-autoplay="true" + data-slider-autoplay-duration="5" (seconds) on the wrapper.
  *   Pauses on mouse hover over the slides (the track, not the controls), on keyboard focus inside the slider, off screen and in a hidden tab.
+ *   The active progress bar fill (.image-slider_bar-fill) grows over the interval and pauses with it. Without autoplay the active bar shows full.
  *   Off with prefers-reduced-motion. A stop/start button is added for keyboard and screen reader users (WCAG 2.2.2).
- * CSS lives in the Section / Image slider and Section / Hero slider embeds.
+ * CSS lives in the Section / Slider embed.
  */
 function initImageSlider() {
   const wrappers = document.querySelectorAll('[data-image-slider="wrapper"]');
@@ -3151,15 +3152,20 @@ function initImageSlider() {
       slide.querySelectorAll("img").forEach((img) => { img.draggable = false; });
     });
 
-    // One bar per slide
+    // One bar per slide, each with a fill that grows over the autoplay interval
     let bars = [];
+    let fills = [];
     if (progress) {
       progress.innerHTML = "";
       progress.setAttribute("aria-hidden", "true");
       bars = slides.map(() => {
         const bar = document.createElement("div");
         bar.className = "image-slider_bar";
+        const fill = document.createElement("div");
+        fill.className = "image-slider_bar-fill";
+        bar.appendChild(fill);
         progress.appendChild(bar);
+        fills.push(fill);
         return bar;
       });
     }
@@ -3171,8 +3177,10 @@ function initImageSlider() {
     let inView = false;
     let userPaused = false;
     let toggle = null;
+    let ready = false;
 
     function setActive(index) {
+      const changed = index !== currentIndex || !ready;
       currentIndex = index;
       slides.forEach((slide, i) => {
         const active = i === index;
@@ -3182,7 +3190,7 @@ function initImageSlider() {
       bars.forEach((bar, i) => bar.classList.toggle("is-active", i === index));
       if (status) status.textContent = `Image ${index + 1} of ${total}`;
       // Any change (autoplay, buttons, drag, keys) gives the new slide a full interval
-      if (timer) { stopTimer(); update(); }
+      if (changed && ready) startTimer();
     }
 
     const loop = horizontalLoop(slides, {
@@ -3207,13 +3215,34 @@ function initImageSlider() {
     if (nextButton) nextButton.addEventListener("click", onNext);
     wrapper.addEventListener("keydown", onKey);
 
-    // Autoplay
+    // Autoplay: the active bar's fill grows over the interval, then the slider moves on
+    function autoplayEnabled() {
+      return autoplayOn && !reduceMotion.matches && !userPaused;
+    }
+
     function shouldRun() {
-      return autoplayOn && !reduceMotion.matches && !userPaused && !hovering && !keyboardFocus && inView && !document.hidden;
+      return autoplayEnabled() && !hovering && !keyboardFocus && inView && !document.hidden;
     }
 
     function stopTimer() {
       if (timer) { timer.kill(); timer = null; }
+      if (fills.length) gsap.set(fills, { scaleX: 0 });
+    }
+
+    function startTimer() {
+      stopTimer();
+      const fill = fills[currentIndex];
+      if (!autoplayEnabled()) {
+        // No autoplay: the active bar is simply shown full
+        if (fill) gsap.set(fill, { scaleX: 1 });
+        update();
+        return;
+      }
+      const advance = () => { timer = null; onNext(); };
+      timer = fill
+        ? gsap.fromTo(fill, { scaleX: 0 }, { scaleX: 1, duration: autoplayDuration, ease: "none", paused: true, onComplete: advance })
+        : gsap.delayedCall(autoplayDuration, advance).pause();
+      update();
     }
 
     function update() {
@@ -3222,11 +3251,9 @@ function initImageSlider() {
         toggle.textContent = userPaused ? "Start automatic slide show" : "Stop automatic slide show";
       }
       if (status) status.setAttribute("aria-live", shouldRun() ? "off" : "polite");
-      if (shouldRun()) {
-        if (!timer) timer = gsap.delayedCall(autoplayDuration, () => { timer = null; onNext(); update(); });
-      } else {
-        stopTimer();
-      }
+      if (!timer) return;
+      if (shouldRun()) timer.resume();
+      else timer.pause();
     }
 
     const onPointerEnter = (e) => { if (e.pointerType === "mouse") { hovering = true; update(); } };
@@ -3249,7 +3276,7 @@ function initImageSlider() {
       toggle = document.createElement("button");
       toggle.type = "button";
       toggle.className = "image-slider_toggle";
-      toggle.addEventListener("click", () => { userPaused = !userPaused; update(); });
+      toggle.addEventListener("click", () => { userPaused = !userPaused; startTimer(); });
       if (progress && progress.parentElement) progress.parentElement.insertBefore(toggle, progress);
       else wrapper.appendChild(toggle);
 
@@ -3258,7 +3285,7 @@ function initImageSlider() {
       wrapper.addEventListener("focusin", onFocusIn);
       wrapper.addEventListener("focusout", onFocusOut);
       document.addEventListener("visibilitychange", update);
-      if (typeof reduceMotion.addEventListener === "function") reduceMotion.addEventListener("change", update);
+      if (typeof reduceMotion.addEventListener === "function") reduceMotion.addEventListener("change", startTimer);
 
       if ("IntersectionObserver" in window) {
         observer = new IntersectionObserver((entries) => { inView = entries[0].isIntersecting; update(); }, { threshold: 0.2 });
@@ -3266,8 +3293,10 @@ function initImageSlider() {
       } else {
         inView = true;
       }
-      update();
     }
+
+    ready = true;
+    startTimer();
 
     pageCleanups.push(() => {
       stopTimer();
@@ -3278,7 +3307,7 @@ function initImageSlider() {
       wrapper.removeEventListener("focusin", onFocusIn);
       wrapper.removeEventListener("focusout", onFocusOut);
       document.removeEventListener("visibilitychange", update);
-      if (typeof reduceMotion.removeEventListener === "function") reduceMotion.removeEventListener("change", update);
+      if (typeof reduceMotion.removeEventListener === "function") reduceMotion.removeEventListener("change", startTimer);
       if (prevButton) prevButton.removeEventListener("click", onPrev);
       if (nextButton) nextButton.removeEventListener("click", onNext);
       wrapper.removeEventListener("keydown", onKey);
