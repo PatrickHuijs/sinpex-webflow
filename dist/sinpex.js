@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.8.0 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.8.1 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -38,8 +38,8 @@ function runPageCleanups() {
  */
 const lenis = new Lenis({
   lerp: 0.07,
-  smooth: true,
-  smoothTouch: false
+  smoothWheel: true,
+  syncTouch: false
 });
 
 window.lenis = lenis;
@@ -110,6 +110,9 @@ window.addEventListener('popstate', function (e) {
   }
 });
 
+// Barba controls scroll position (top on every page change), not the browser
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 barba.init({
   prevent: ({ href }) => isSamePageAnchor(href),
   transitions: [
@@ -141,8 +144,25 @@ barba.hooks.beforeEnter(() => {
   document.body.style.overflow = '';
 });
 
-barba.hooks.after(() => {
+// Webflow only binds its own features (native forms, interactions, tabs, dropdowns) on a full page load.
+// After a Barba swap: copy the new page's data-wf-page onto <html> and re-run Webflow on the new container.
+function reinitWebflow(next) {
+  const match = next && next.html ? next.html.match(/data-wf-page="([^"]+)"/) : null;
+  if (match) document.documentElement.setAttribute('data-wf-page', match[1]);
+  if (!window.Webflow) return;
+  try {
+    window.Webflow.destroy();
+    window.Webflow.ready();
+    const ix2 = window.Webflow.require('ix2');
+    if (ix2 && typeof ix2.init === 'function') ix2.init();
+  } catch (e) {
+    console.warn('[webflow reinit failed]', e);
+  }
+}
+
+barba.hooks.after((data) => {
   barbaLastHref = window.location.href;
+  reinitWebflow(data && data.next);
   initPageScripts();
 });
 
@@ -2477,6 +2497,11 @@ function initLogoWallCycle() {
         list.__layerStackObserved = true;
         var ro = new ResizeObserver(function () { update(list); });
         getItems(list).forEach(function (item) { ro.observe(item); });
+        // Disconnect before a Barba page change so the old page's list can be released
+        pageCleanups.push(function () {
+          ro.disconnect();
+          list.__layerStackObserved = false;
+        });
       }
       update(list);
     });
@@ -2488,16 +2513,9 @@ function initLogoWallCycle() {
     resizeTimer = setTimeout(init, 100);
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Started by master-init (first load and after every Barba transition); re-measured once images have loaded
   window.addEventListener('load', init);
-
-  if (window.barba && window.barba.hooks) {
-    window.barba.hooks.after(init);
-  }
+  window.initLayerStack = init;
 
   window.__layerStack = { init: init };
 })();
@@ -2508,11 +2526,6 @@ function initLogoWallCycle() {
  * Testimonials fade slider: autoplay timer bars, hover/focus pause, accessible. CSS stays in the Section / Testimonials embed.
  */
 (function () {
-  if (window.__fadeSlider) {
-    window.__fadeSlider.init();
-    return;
-  }
-
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function initSlider(root) {
@@ -2737,11 +2750,13 @@ function initLogoWallCycle() {
     });
 
     // Pause when the slider is off screen
+    var observer = null;
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries) {
+      observer = new IntersectionObserver(function (entries) {
         inView = entries[0].isIntersecting;
         update();
-      }, { threshold: 0.2 }).observe(root);
+      }, { threshold: 0.2 });
+      observer.observe(root);
     }
 
     document.addEventListener('visibilitychange', update);
@@ -2749,6 +2764,19 @@ function initLogoWallCycle() {
     if (typeof reduceMotion.addEventListener === 'function') {
       reduceMotion.addEventListener('change', restart);
     }
+
+    // Teardown before a Barba page change: stop the timer and drop the global listeners
+    pageCleanups.push(function () {
+      stopTimer();
+      if (observer) observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+      if (typeof reduceMotion.removeEventListener === 'function') {
+        reduceMotion.removeEventListener('change', restart);
+      }
+      if (root.__fadeSliderToggle) root.__fadeSliderToggle.remove();
+      root.__fadeSliderToggle = null;
+      root.__fadeSliderReady = false;
+    });
 
     root.setAttribute('data-fade-slider-ready', '');
     setActive(0);
@@ -2759,16 +2787,8 @@ function initLogoWallCycle() {
     document.querySelectorAll('[data-fade-slider="wrapper"]').forEach(initSlider);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  if (window.barba && window.barba.hooks) {
-    window.barba.hooks.after(init);
-  }
-
+  // Started by master-init (first load and after every Barba transition), so its teardown runs with the other modules
+  window.initFadeSliders = init;
   window.__fadeSlider = { init: init };
 })();
 
@@ -3842,7 +3862,9 @@ function initPageScripts() {
     initDraggableMarquee,
     initImageSlider,
     initResourceLibrary,
-    initWebinarSlider
+    initWebinarSlider,
+    initFadeSliders,
+    initLayerStack
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

@@ -82,6 +82,11 @@
         list.__layerStackObserved = true;
         var ro = new ResizeObserver(function () { update(list); });
         getItems(list).forEach(function (item) { ro.observe(item); });
+        // Disconnect before a Barba page change so the old page's list can be released
+        pageCleanups.push(function () {
+          ro.disconnect();
+          list.__layerStackObserved = false;
+        });
       }
       update(list);
     });
@@ -93,16 +98,9 @@
     resizeTimer = setTimeout(init, 100);
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Started by master-init (first load and after every Barba transition); re-measured once images have loaded
   window.addEventListener('load', init);
-
-  if (window.barba && window.barba.hooks) {
-    window.barba.hooks.after(init);
-  }
+  window.initLayerStack = init;
 
   window.__layerStack = { init: init };
 })();

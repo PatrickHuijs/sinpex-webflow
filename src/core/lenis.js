@@ -3,8 +3,8 @@
  */
 const lenis = new Lenis({
   lerp: 0.07,
-  smooth: true,
-  smoothTouch: false
+  smoothWheel: true,
+  syncTouch: false
 });
 
 window.lenis = lenis;

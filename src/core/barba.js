@@ -54,6 +54,9 @@ window.addEventListener('popstate', function (e) {
   }
 });
 
+// Barba controls scroll position (top on every page change), not the browser
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 barba.init({
   prevent: ({ href }) => isSamePageAnchor(href),
   transitions: [
@@ -85,7 +88,24 @@ barba.hooks.beforeEnter(() => {
   document.body.style.overflow = '';
 });
 
-barba.hooks.after(() => {
+// Webflow only binds its own features (native forms, interactions, tabs, dropdowns) on a full page load.
+// After a Barba swap: copy the new page's data-wf-page onto <html> and re-run Webflow on the new container.
+function reinitWebflow(next) {
+  const match = next && next.html ? next.html.match(/data-wf-page="([^"]+)"/) : null;
+  if (match) document.documentElement.setAttribute('data-wf-page', match[1]);
+  if (!window.Webflow) return;
+  try {
+    window.Webflow.destroy();
+    window.Webflow.ready();
+    const ix2 = window.Webflow.require('ix2');
+    if (ix2 && typeof ix2.init === 'function') ix2.init();
+  } catch (e) {
+    console.warn('[webflow reinit failed]', e);
+  }
+}
+
+barba.hooks.after((data) => {
   barbaLastHref = window.location.href;
+  reinitWebflow(data && data.next);
   initPageScripts();
 });

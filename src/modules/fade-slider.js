@@ -2,11 +2,6 @@
  * Testimonials fade slider: autoplay timer bars, hover/focus pause, accessible. CSS stays in the Section / Testimonials embed.
  */
 (function () {
-  if (window.__fadeSlider) {
-    window.__fadeSlider.init();
-    return;
-  }
-
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function initSlider(root) {
@@ -231,11 +226,13 @@
     });
 
     // Pause when the slider is off screen
+    var observer = null;
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries) {
+      observer = new IntersectionObserver(function (entries) {
         inView = entries[0].isIntersecting;
         update();
-      }, { threshold: 0.2 }).observe(root);
+      }, { threshold: 0.2 });
+      observer.observe(root);
     }
 
     document.addEventListener('visibilitychange', update);
@@ -243,6 +240,19 @@
     if (typeof reduceMotion.addEventListener === 'function') {
       reduceMotion.addEventListener('change', restart);
     }
+
+    // Teardown before a Barba page change: stop the timer and drop the global listeners
+    pageCleanups.push(function () {
+      stopTimer();
+      if (observer) observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+      if (typeof reduceMotion.removeEventListener === 'function') {
+        reduceMotion.removeEventListener('change', restart);
+      }
+      if (root.__fadeSliderToggle) root.__fadeSliderToggle.remove();
+      root.__fadeSliderToggle = null;
+      root.__fadeSliderReady = false;
+    });
 
     root.setAttribute('data-fade-slider-ready', '');
     setActive(0);
@@ -253,15 +263,7 @@
     document.querySelectorAll('[data-fade-slider="wrapper"]').forEach(initSlider);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  if (window.barba && window.barba.hooks) {
-    window.barba.hooks.after(init);
-  }
-
+  // Started by master-init (first load and after every Barba transition), so its teardown runs with the other modules
+  window.initFadeSliders = init;
   window.__fadeSlider = { init: init };
 })();

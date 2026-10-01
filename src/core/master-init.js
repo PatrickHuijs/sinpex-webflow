@@ -30,7 +30,9 @@ function initPageScripts() {
     initDraggableMarquee,
     initImageSlider,
     initResourceLibrary,
-    initWebinarSlider
+    initWebinarSlider,
+    initFadeSliders,
+    initLayerStack
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
