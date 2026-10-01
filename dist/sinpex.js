@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.8.1 | built 2026-10-01 */
+/*! Sinpex Webflow scripts v1.8.2 | built 2026-10-01 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3573,6 +3573,7 @@ function initResourceLibrary() {
  * - Status comes from the item date, by calendar day only (no times): today or later = upcoming, before today = on demand.
  *   The date is read from the card's [data-resource-date] text (bound to the Date field), e.g. "August 5, 2026" or "2026-08-05".
  *   An item without a readable date only shows under All.
+ * - Order: furthest date first (e.g. Nov, Oct, today, Aug, Jun), in every tab. Items without a readable date go last.
  * - The track moves with GSAP; the last stop is clamped so the row never ends in empty space. One progress bar per stop.
  * - Drag/swipe (Draggable), prev/next buttons, left/right arrow keys. Focusing a card brings it into view.
  * - Switching filter fades the list out, resets to the first slide and fades the new items in; instant with reduced motion.
@@ -3603,19 +3604,22 @@ function initWebinarSlider() {
     return isNaN(parsed) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
 
-  function statusOf(slide, today) {
+  function dayOf(slide) {
     const el = slide.querySelector("[data-resource-date]");
-    const day = parseDay(slide.getAttribute("data-webinar-date") || (el ? el.textContent : ""));
-    if (!day) return "";
-    return day.getTime() >= today.getTime() ? "upcoming" : "on-demand";
+    return parseDay(slide.getAttribute("data-webinar-date") || (el ? el.textContent : ""));
   }
 
   wrappers.forEach((wrapper) => {
     if (wrapper.dataset.webinarsReady) return;
 
     const list = wrapper.querySelector('[data-webinars="list"]');
-    const slides = Array.from(wrapper.querySelectorAll('[data-webinars="slide"]'));
+    // Furthest date first; items without a readable date go last
+    const days = new Map();
+    const slides = Array.from(wrapper.querySelectorAll('[data-webinars="slide"]'))
+      .map((slide) => { days.set(slide, dayOf(slide)); return slide; })
+      .sort((a, b) => (days.get(b) ? days.get(b).getTime() : -Infinity) - (days.get(a) ? days.get(a).getTime() : -Infinity) || 0);
     if (!list || !slides.length) return;
+    slides.forEach((slide) => list.appendChild(slide));
     wrapper.dataset.webinarsReady = "true";
 
     const viewport = list.parentElement;
@@ -3629,7 +3633,8 @@ function initWebinarSlider() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const statuses = slides.map((slide) => {
-      const s = statusOf(slide, today);
+      const day = days.get(slide);
+      const s = day ? (day.getTime() >= today.getTime() ? "upcoming" : "on-demand") : "";
       if (s) slide.setAttribute("data-webinar-status", s);
       return s;
     });

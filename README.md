@@ -52,7 +52,7 @@ build.js        bundles src/ in load order
 | modules/draggable-marquee.js | Section / Hero marquee: one-way draggable image marquee + horizontal image parallax | Section / Hero marquee embed |
 | modules/image-slider.js | Section / Slider: centred looping image slider with horizontal image parallax (data-slider-parallax), growing progress bars, arrows, drag and keyboard (uses horizontalLoop). Optional autoplay via data-slider-autoplay="true" + data-slider-autoplay-duration; the active bar fills over the interval and pauses on hover over the track, keyboard focus, off screen; stop/start button for keyboard users | Section / Slider embed |
 | modules/resource-library.js | Section / Resources: fade transition between filters/pages, type filter tabs (data-resources-filter) and client-side pagination (data-resources-per-page) for the Resources collection list; reads each card's [data-resource-type] text | Section / Resources embed |
-| modules/webinar-slider.js | Section / Webinar spotlight: left-aligned CMS slider (drag, prev/next, keys, one progress bar per stop) with All / Upcoming / On demand filters (data-webinars-filter); status from each card's [data-resource-date] text by calendar day, today counts as upcoming | Section / Webinar spotlight embed |
+| modules/webinar-slider.js | Section / Webinar spotlight: left-aligned CMS slider (drag, prev/next, keys, one progress bar per stop) with All / Upcoming / On demand filters (data-webinars-filter); sorted furthest date first; status from each card's [data-resource-date] text by calendar day, today counts as upcoming | Section / Webinar spotlight embed |
 
 ## Working on a script
 
