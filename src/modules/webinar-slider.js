@@ -10,6 +10,8 @@
  * - Order: furthest date first (e.g. Nov, Oct, today, Aug, Jun), in every tab. Items without a readable date go last.
  * - The track moves with GSAP; the last stop is clamped so the row never ends in empty space. One progress bar per stop.
  * - Drag/swipe (Draggable), prev/next buttons, left/right arrow keys. Focusing a card brings it into view.
+ * - Mobile (767px and down): no slider. Cards stack and show 3 at a time (data-webinars-mobile-count) with a
+ *   [data-webinars="more"] Load More button; each tab starts again at 3.
  * - Switching filter fades the list out, resets to the first slide and fades the new items in; instant with reduced motion.
  * CSS lives in the Section / Webinar spotlight embed.
  */
@@ -63,6 +65,9 @@ function initWebinarSlider() {
     const nextButton = wrapper.querySelector('[data-webinars="next"]');
     const status = wrapper.querySelector('[data-webinars="status"]');
     const controls = progress ? progress.closest(".image-slider_controls") : null;
+    const moreButton = wrapper.querySelector('[data-webinars="more"]');
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const step = Math.max(1, parseInt(wrapper.getAttribute("data-webinars-mobile-count"), 10) || 3);
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -85,6 +90,7 @@ function initWebinarSlider() {
     let stops = [0];
     let bars = [];
     let dragged = false;
+    let shownCount = step;
 
     const visible = () => slides.filter((slide) => !slide.hidden);
     const ease = () => ({ ease: "osmo-ease", duration: reduceMotion.matches ? 0 : 0.725 });
@@ -163,12 +169,13 @@ function initWebinarSlider() {
     const onPrev = () => goTo(index - 1);
     const onNext = () => goTo(index + 1);
     const onKey = (e) => {
-      if (e.target.closest("[data-webinars-filter]")) return;
+      if (mobile.matches || e.target.closest("[data-webinars-filter]")) return;
       if (e.key === "ArrowLeft") { e.preventDefault(); onPrev(); }
       if (e.key === "ArrowRight") { e.preventDefault(); onNext(); }
     };
     // Keyboard focus on a card off screen brings it into view
     const onFocusIn = (e) => {
+      if (mobile.matches) return;
       const slide = e.target.closest('[data-webinars="slide"]');
       if (!slide || slide.hidden) return;
       viewport.scrollLeft = 0;
@@ -184,19 +191,59 @@ function initWebinarSlider() {
     wrapper.addEventListener("keydown", onKey);
     wrapper.addEventListener("focusin", onFocusIn);
 
+    const matching = () => slides.filter((slide, i) => activeFilter === "all" || statuses[i] === activeFilter);
+
+    // Desktop/tablet: every matching item in the slider. Mobile: a stacked list showing `shownCount` items plus Load More.
+    function applyVisibility() {
+      const items = matching();
+      slides.forEach((slide) => { slide.hidden = true; });
+      items.forEach((slide, i) => { slide.hidden = mobile.matches && i >= shownCount; });
+      if (moreButton) {
+        moreButton.hidden = !mobile.matches || items.length <= shownCount;
+        moreButton.setAttribute("aria-controls", list.id);
+      }
+      if (draggable) {
+        if (mobile.matches) draggable.disable(); else draggable.enable();
+      }
+      list.classList.toggle("is-draggable", !!draggable && !mobile.matches);
+      return items.length;
+    }
+
     function render() {
-      slides.forEach((slide, i) => {
-        slide.hidden = !(activeFilter === "all" || statuses[i] === activeFilter);
-      });
+      shownCount = step;
+      const count = applyVisibility();
       gsap.set(list, { x: 0 });
       index = 0;
       measure();
       buildBars();
       update();
-      const count = visible().length;
       if (status) status.textContent = `${count} ${count === 1 ? "webinar" : "webinars"} shown`;
       if (window.ScrollTrigger) ScrollTrigger.refresh();
     }
+
+    // Mobile: show the next batch, fade it in and move focus to its first card
+    const onMore = () => {
+      const before = visible();
+      shownCount += step;
+      applyVisibility();
+      const added = visible().filter((slide) => before.indexOf(slide) === -1);
+      if (!added.length) return;
+      if (!reduceMotion.matches) {
+        gsap.fromTo(added,
+          { opacity: 0, y: "0.75rem" },
+          { opacity: 1, y: 0, duration: 0.45, ease: "power2.out", clearProps: "opacity,transform" }
+        );
+      }
+      const focusTarget = added[0].querySelector("a, button, [tabindex]");
+      if (focusTarget) focusTarget.focus({ preventScroll: true });
+      if (status) status.textContent = `${visible().length} of ${matching().length} webinars shown`;
+      if (window.ScrollTrigger) ScrollTrigger.refresh();
+    };
+    if (moreButton) moreButton.addEventListener("click", onMore);
+
+    // Switching between mobile and larger screens rebuilds the view
+    const onModeChange = () => render();
+    if (typeof mobile.addEventListener === "function") mobile.addEventListener("change", onModeChange);
 
     // Fade the list out, swap the items, fade the new items in together. Instant with reduced motion.
     function setFilter(value, animate) {
@@ -251,6 +298,8 @@ function initWebinarSlider() {
     pageCleanups.push(() => {
       window.removeEventListener("resize", onResize);
       filters.forEach((btn) => btn.removeEventListener("click", onFilterClick));
+      if (moreButton) { moreButton.removeEventListener("click", onMore); moreButton.hidden = false; }
+      if (typeof mobile.removeEventListener === "function") mobile.removeEventListener("change", onModeChange);
       if (prevButton) prevButton.removeEventListener("click", onPrev);
       if (nextButton) nextButton.removeEventListener("click", onNext);
       wrapper.removeEventListener("keydown", onKey);
