@@ -28,6 +28,7 @@ function initPageScripts() {
     initCapabilityTable,
     initFaq,
     initDraggableMarquee,
+    initResourceSlider,
     initImageSlider,
     initResourceLibrary,
     initWebinarSlider,

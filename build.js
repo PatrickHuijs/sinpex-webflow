@@ -40,6 +40,7 @@ const order = [
   'src/modules/image-slider.js',
   'src/modules/resource-library.js',
   'src/modules/webinar-slider.js',
+  'src/modules/resource-slider.js',
 
   'src/core/master-init.js'
 ];
