@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.8.7 | built 2026-10-02 */
+/*! Sinpex Webflow scripts v1.8.8 | built 2026-10-02 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3915,7 +3915,9 @@ function initWebinarSlider() {
  *         [data-resource-slider="source"] on the Collection List bound to the Slider images field (Resources template), holding the images
  * - Every image in the source becomes a slide: .image-slider_slide[data-image-slider="slide"] > .image-slider_image-wrap > img.image-slider_img
  * - Order follows the CMS field. The first slider gets the real images, a second slider in the same article gets copies.
- * - Fewer than 2 images, or no source on the page: the slider's section is removed, so no empty block is left in the article.
+ * - 1 image: shown as a static, full-width image. The wrapper gets data-resource-slider-single and stops being a slider
+ *   (data-image-slider is taken off, so image-slider.js skips it); CSS hides the bars and arrows.
+ * - No images, or no source on the page: the slider's section is removed, so no empty block is left in the article.
  * - The source list is removed after use. From there modules/image-slider.js takes over (loop, drag, bars, autoplay).
  * CSS lives in the Resources CMS only / Article image slider embed.
  */
@@ -3947,11 +3949,16 @@ function initResourceSlider() {
 
   targets.forEach((target, index) => {
     const track = target.querySelector(".image-slider_track");
-    if (!track || images.length < 2) {
+    if (!track || !images.length) {
       (target.closest("section") || target).remove();
       return;
     }
     target.dataset.resourceSliderReady = "true";
+    if (images.length === 1) {
+      target.setAttribute("data-resource-slider-single", "");
+      target.removeAttribute("data-image-slider");
+      target.removeAttribute("aria-label");
+    }
     images.forEach((img) => track.appendChild(buildSlide(index === 0 ? img : img.cloneNode(true))));
   });
 
