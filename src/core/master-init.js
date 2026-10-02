@@ -12,7 +12,6 @@ function initPageScripts() {
   document.fonts.ready.then(() => safeInit(initMaskTextScrollReveal));
 
   [
-    initResourceHero,
     initButtonIconRecolour,
     initSwiperAccessibility,
     initCSSMarquee,
