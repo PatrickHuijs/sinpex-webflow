@@ -3,7 +3,8 @@
  * Markup: [data-image-slider="wrapper"] > .image-slider_track > [data-image-slider="slide"] (3 fixed + extra via slot)
  *         [data-image-slider="progress"] (bars are built here), [data-image-slider="prev"|"next"], [data-image-slider="status"]
  * - Uses horizontalLoop() from centered-slider.js (seamless loop, centred, draggable). The active slide is always centred
- *   with a peek on both sides; under 5 slides, hidden copies are added so the peeks never drop out while sliding.
+ *   with a peek on both sides; under 5 slides, or when the slides together are narrower than twice the track, hidden copies
+ *   are added so the peeks never drop out while sliding.
  * - Keyboard: left/right arrows while focus is inside the slider. Screen readers get "Image x of y" via the status element.
  * - Autoplay (opt-in, same attributes as the Proof slider): data-slider-autoplay="true" + data-slider-autoplay-duration="5" (seconds) on the wrapper.
  *   Pauses on mouse hover over the slides (the track, not the controls), on keyboard focus inside the slider, off screen and in a hidden tab.
@@ -53,7 +54,7 @@ function initImageSlider() {
     const items = slides.slice();
     const clones = [];
     const host = slides[0].parentNode;
-    while (items.length < 5) {
+    const addCopies = () => {
       slides.forEach((slide) => {
         const copy = slide.cloneNode(true);
         copy.setAttribute("data-image-slider-clone", "");
@@ -66,7 +67,11 @@ function initImageSlider() {
         clones.push(copy);
         items.push(copy);
       });
-    }
+    };
+    while (items.length < 5) addCopies();
+    // Narrow slides (e.g. auto-width images): keep adding copies until the row is at least twice as wide as the track
+    const rowWidth = () => items.reduce((sum, item) => sum + item.offsetWidth, 0);
+    while (items.length < 40 && rowWidth() > 0 && rowWidth() < track.offsetWidth * 2) addCopies();
 
     // One bar per slide, each with a fill that grows over the autoplay interval
     let bars = [];

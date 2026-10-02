@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.8.8 | built 2026-10-02 */
+/*! Sinpex Webflow scripts v1.8.9 | built 2026-10-02 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -3132,7 +3132,8 @@ function initDraggableMarquee() {
  * Markup: [data-image-slider="wrapper"] > .image-slider_track > [data-image-slider="slide"] (3 fixed + extra via slot)
  *         [data-image-slider="progress"] (bars are built here), [data-image-slider="prev"|"next"], [data-image-slider="status"]
  * - Uses horizontalLoop() from centered-slider.js (seamless loop, centred, draggable). The active slide is always centred
- *   with a peek on both sides; under 5 slides, hidden copies are added so the peeks never drop out while sliding.
+ *   with a peek on both sides; under 5 slides, or when the slides together are narrower than twice the track, hidden copies
+ *   are added so the peeks never drop out while sliding.
  * - Keyboard: left/right arrows while focus is inside the slider. Screen readers get "Image x of y" via the status element.
  * - Autoplay (opt-in, same attributes as the Proof slider): data-slider-autoplay="true" + data-slider-autoplay-duration="5" (seconds) on the wrapper.
  *   Pauses on mouse hover over the slides (the track, not the controls), on keyboard focus inside the slider, off screen and in a hidden tab.
@@ -3182,7 +3183,7 @@ function initImageSlider() {
     const items = slides.slice();
     const clones = [];
     const host = slides[0].parentNode;
-    while (items.length < 5) {
+    const addCopies = () => {
       slides.forEach((slide) => {
         const copy = slide.cloneNode(true);
         copy.setAttribute("data-image-slider-clone", "");
@@ -3195,7 +3196,11 @@ function initImageSlider() {
         clones.push(copy);
         items.push(copy);
       });
-    }
+    };
+    while (items.length < 5) addCopies();
+    // Narrow slides (e.g. auto-width images): keep adding copies until the row is at least twice as wide as the track
+    const rowWidth = () => items.reduce((sum, item) => sum + item.offsetWidth, 0);
+    while (items.length < 40 && rowWidth() > 0 && rowWidth() < track.offsetWidth * 2) addCopies();
 
     // One bar per slide, each with a fill that grows over the autoplay interval
     let bars = [];
@@ -3915,7 +3920,10 @@ function initWebinarSlider() {
  *         [data-resource-slider="source"] on the Collection List bound to the Slider images field (Resources template), holding the images
  * - Every image in the source becomes a slide: .image-slider_slide[data-image-slider="slide"] > .image-slider_image-wrap > img.image-slider_img
  * - Order follows the CMS field. The first slider gets the real images, a second slider in the same article gets copies.
- * - 1 image: shown as a static, full-width image. The wrapper gets data-resource-slider-single and stops being a slider
+ * - Images keep their own proportions: the CSS fixes the height, and each image frame gets the image's aspect ratio inline,
+ *   so the width follows. The loop measures slide widths, so the image slider only starts once the images have loaded
+ *   (or after 4 seconds); until then the row sits still.
+ * - 1 image: shown as a static, centred image. The wrapper gets data-resource-slider-single and stops being a slider
  *   (data-image-slider is taken off, so image-slider.js skips it); CSS hides the bars and arrows.
  * - No images, or no source on the page: the slider's section is removed, so no empty block is left in the article.
  * - The source list is removed after use. From there modules/image-slider.js takes over (loop, drag, bars, autoplay).
@@ -3941,7 +3949,7 @@ function initResourceSlider() {
     img.className = "image-slider_img";
     img.removeAttribute("id");
     if (!img.hasAttribute("alt")) img.setAttribute("alt", "");
-    if (!img.hasAttribute("loading")) img.setAttribute("loading", "lazy");
+    img.setAttribute("loading", "eager"); // widths are needed before the loop starts
     wrap.appendChild(img);
     slide.appendChild(wrap);
     return slide;
@@ -3959,7 +3967,41 @@ function initResourceSlider() {
       target.removeAttribute("data-image-slider");
       target.removeAttribute("aria-label");
     }
-    images.forEach((img) => track.appendChild(buildSlide(index === 0 ? img : img.cloneNode(true))));
+    const placed = images.map((img) => (index === 0 ? img : img.cloneNode(true)));
+    placed.forEach((img) => track.appendChild(buildSlide(img)));
+
+    // The slide width comes from the image's own proportions, set as an aspect ratio on its frame.
+    // That way the hidden copies the image slider adds have the right width straight away, before their image loads.
+    const hasSize = (img) => img.complete && img.naturalWidth > 0;
+    const setRatio = (img) => {
+      if (hasSize(img)) img.parentElement.style.aspectRatio = img.naturalWidth + " / " + img.naturalHeight;
+    };
+    placed.forEach(setRatio);
+    if (placed.length < 2) {
+      placed.forEach((img) => { if (!hasSize(img)) img.addEventListener("load", () => setRatio(img), { once: true }); });
+      return;
+    }
+
+    // Hold the image slider back until every image has its size, then start it
+    const waiting = placed.filter((img) => !hasSize(img));
+    if (!waiting.length) return;
+    target.dataset.imageSliderReady = "pending";
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      placed.forEach(setRatio);
+      if (!target.isConnected || target.dataset.imageSliderReady !== "pending") return;
+      delete target.dataset.imageSliderReady;
+      if (typeof initImageSlider === "function") initImageSlider();
+    };
+    let left = waiting.length;
+    const done = () => { left -= 1; if (left <= 0) start(); };
+    waiting.forEach((img) => {
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", done, { once: true });
+    });
+    setTimeout(start, 4000);
   });
 
   sources.forEach((source) => source.remove());
