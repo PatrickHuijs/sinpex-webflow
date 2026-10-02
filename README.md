@@ -25,12 +25,12 @@ build.js        bundles src/ in load order
 | core/gsap-setup.js | Registers GSAP plugins and `osmo-ease` | – |
 | core/cleanup-registry.js | `pageCleanups` + `runPageCleanups()` for Barba | – |
 | core/lenis.js | Lenis smooth scroll synced with ScrollTrigger | Site head (lenis.css) |
-| core/barba.js | Page transitions and lifecycle hooks; re-runs Webflow (data-wf-page, forms, IX2) after each swap; manual scroll restoration | – |
+| core/barba.js | Page transitions and lifecycle hooks; the leave waits for the mobile menu to close; clicks during a running transition are ignored; re-runs Webflow (data-wf-page, forms, IX2) after each swap; manual scroll restoration | – |
 | core/master-init.js | `initPageScripts()`: runs every page init, first load and after each transition. Loads last. | – |
 | modules/card-stack.js | Platform card stack | Global Custom Code |
 | modules/metrics-counter.js | Number odometer | Site footer + Global Custom Code |
 | modules/text-split.js | Masked text reveal | Site head |
-| modules/nav-menu.js | Mobile menu + scroll background | – |
+| modules/nav-menu.js | Mobile menu + scroll background. Closes before a page change; a menu link to the current page only closes the menu and scrolls to the top | – |
 | modules/nav-theme.js | Nav base/dark switch per section | – |
 | modules/button-icon-recolour.js | Masked button icons | Site head |
 | modules/swiper-a11y.js | Swiper accessibility | – |

@@ -5,18 +5,27 @@
  * - 'self' runs when a link points to the page you are already on (e.g. clicking
  *   Solutions on the Solutions page). Without it Barba ignores the click and the
  *   browser does a full reload, which shows as a hard blink.
+ * - With the mobile menu open, the leave first waits for the menu to close (window.closeNavMenu() returns a promise).
+ *   A menu link to the current page never gets here: nav-menu.js closes the menu and scrolls to the top instead.
  * - Same-page anchor links (#section) are left to the browser so they still jump.
  */
 function pageLeave(data) {
-  return gsap.to(data.current.container, {
-    opacity: 0,
-    y: -20,
-    duration: 0.3
+  // An open mobile menu slides shut first; the page only starts leaving once it is closed.
+  var closed = typeof window.closeNavMenu === 'function' ? window.closeNavMenu() : null;
+  return Promise.resolve(closed).then(function () {
+    return new Promise(function (resolve) {
+      gsap.to(data.current.container, {
+        opacity: 0,
+        y: -20,
+        duration: 0.3,
+        onComplete: resolve
+      });
+    });
   });
 }
 
 function pageEnter(data) {
-  lenis.scrollTo(0, { immediate: true });
+  lenis.scrollTo(0, { immediate: true, force: true }); // force: also when the menu holds the scroll lock
 
   // NOTE: nav variant is not set here. The theme-by-section script is the
   // single owner of the variant and runs on beforeEnter, so there is no
@@ -58,6 +67,7 @@ window.addEventListener('popstate', function (e) {
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 barba.init({
+  preventRunning: true, // a second click while a transition runs is ignored instead of forcing a full reload
   prevent: ({ href }) => isSamePageAnchor(href),
   transitions: [
     {
@@ -73,19 +83,15 @@ barba.init({
   ]
 });
 
-// The moment a navigation starts, close the mobile menu smoothly so it
-// slides shut in sync with the page leaving instead of snapping.
-barba.hooks.beforeLeave(() => {
-  if (typeof window.closeNavMenu === 'function') window.closeNavMenu();
-});
-
-// Tear down the old page's listeners before the new one initialises,
-// and guarantee the menu is fully reset before the new page paints.
+// Tear down the old page's listeners before the new one initialises.
+// Scroll is released here, unless the visitor opened the mobile menu again during the transition.
 barba.hooks.beforeEnter(() => {
   runPageCleanups();
-  if (typeof window.resetNavMenu === 'function') window.resetNavMenu();
-  if (window.lenis && window.lenis.start) window.lenis.start();
-  document.body.style.overflow = '';
+  const menuOpen = typeof window.isNavMenuOpen === 'function' && window.isNavMenuOpen();
+  if (!menuOpen) {
+    if (window.lenis && window.lenis.start) window.lenis.start();
+    document.body.style.overflow = '';
+  }
 });
 
 // Webflow only binds its own features (native forms, interactions, tabs, dropdowns) on a full page load.
