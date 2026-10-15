@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.11.0 | built 2026-10-15 */
+/*! Sinpex Webflow scripts v1.12.0 | built 2026-10-15 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -4188,14 +4188,15 @@ function initResourceExternalLinks() {
 
 /* ===== src/modules/hubspot-modals.js ===== */
 /*
- * Modals: Book a demo + Discuss pricing popups with a HubSpot meetings iframe.
- * Markup (Global Custom Code component, outside the Barba container so it persists between pages):
- *   dialog.modal[data-modal="demo" | "pricing"][data-modal-url="<HubSpot meetings URL>"][aria-label]
+ * Modals: HubSpot meetings popups (book-a-demo-en, book-a-demo-de, book-a-demo-pricing-en, book-a-demo-pricing-de).
+ * Markup: Modal / HubSpot component instances in Global Custom Code (outside the Barba container, so they persist):
+ *   dialog.modal[data-modal="<Popup prop>"][data-modal-url="<HubSpot URL prop>"][aria-label="<Label prop>"]
  *     .modal_box > button[data-modal-close] + [data-modal-frame] (the iframe is built here on first open)
- * Triggers:
- *   - Any link whose href points to a dialog's data-modal-url (the existing Book a demo / pricing buttons).
- *     Without JS, or with ctrl/cmd/shift/middle click, the link still opens HubSpot in a new tab.
- *   - Any element with [data-modal-open="demo" | "pricing"].
+ * Triggers (first match wins):
+ *   1. [data-modal-open="<popup name>"] on the button or a parent: the Popup prop on Button Main.
+ *      Empty or unknown value: the button just follows its link (step 2 or a normal click).
+ *   2. Any link whose href points to a dialog's data-modal-url (the HubSpot meetings links).
+ *   Ctrl/cmd/shift/middle clicks and no-JS still follow the link.
  * - Closes with the X button, Escape (native dialog) and a click on the dark overlay.
  * - Focus moves into the dialog on open and back to the button on close; the page behind doesn't scroll.
  * - The iframe is only loaded on first open, so pages don't load HubSpot up front.
@@ -4218,10 +4219,12 @@ function initHubspotModals() {
 
   // Find the dialog a clicked element should open, or null
   const dialogFor = (el) => {
+    // Popup prop on a button: wins over the link. Empty or unknown value: fall back to the link.
     const opener = el.closest("[data-modal-open]");
     if (opener) {
       const name = clean(opener.getAttribute("data-modal-open"));
-      return dialogs.find((d) => clean(d.getAttribute("data-modal")) === name) || null;
+      const named = name && dialogs.find((d) => clean(d.getAttribute("data-modal")) === name);
+      if (named) return named;
     }
     const link = el.closest("a[href]");
     if (!link) return null;
@@ -4234,7 +4237,7 @@ function initHubspotModals() {
   };
 
   // Mark the triggers on this page so assistive tech announces a popup
-  document.querySelectorAll("a[href], [data-modal-open]").forEach((el) => {
+  document.querySelectorAll("a[href], button").forEach((el) => {
     if (dialogFor(el)) el.setAttribute("aria-haspopup", "dialog");
   });
 
