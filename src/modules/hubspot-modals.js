@@ -10,7 +10,8 @@
  *   Ctrl/cmd/shift/middle clicks and no-JS still follow the link.
  * - Closes with the X button, Escape (native dialog) and a click on the dark overlay.
  * - Focus moves into the dialog on open and back to the button on close; the page behind doesn't scroll.
- * - The iframe is only loaded on first open, so pages don't load HubSpot up front.
+ * - The iframe is only loaded on first open, so pages don't load HubSpot up front. It gets the same parameters as
+ *   HubSpot's embed code (embed=true, parentHubspotUtk, parentPageUrl) and is resized to HubSpot's meetingsHeight message.
  * - Attribute values are read case-insensitively; the URL match ignores query, hash, trailing slash and case.
  * CSS lives in the Global Custom Code component (MODALS embed).
  */
@@ -61,17 +62,32 @@ function initHubspotModals() {
 
   let lastTrigger = null;
 
+  // Same iframe HubSpot's MeetingsEmbedCode.js builds: embed=true, the visitor's hubspotutk cookie
+  // (so the booking is tied to the known contact) and the page the popup was opened on.
   function buildFrame(dialog) {
     const frame = dialog.querySelector("[data-modal-frame]");
     const url = (dialog.getAttribute("data-modal-url") || "").trim();
     if (!frame || !url || frame.querySelector("iframe")) return;
-    const src = url + (url.indexOf("?") === -1 ? "?" : "&") + "embed=true";
+    const utkMatch = document.cookie.match(/(?:^|;\s*)hubspotutk=([^;]+)/);
+    const params = ["embed=true", "parentPageUrl=" + encodeURIComponent(window.location.href)];
+    if (utkMatch) params.push("parentHubspotUtk=" + encodeURIComponent(utkMatch[1]));
     const iframe = document.createElement("iframe");
-    iframe.src = src;
+    iframe.src = url + (url.indexOf("?") === -1 ? "?" : "&") + params.join("&");
     iframe.title = dialog.getAttribute("aria-label") || "Booking form";
     iframe.setAttribute("allow", "fullscreen");
     frame.appendChild(iframe);
   }
+
+  // HubSpot posts the calendar height ({ meetingsHeight }); size the iframe to it so the box scrolls, not the calendar
+  window.addEventListener("message", (e) => {
+    if (!/\.hubspot\.com$/i.test(new URL(e.origin || "https://x.invalid").hostname)) return;
+    const height = e.data && parseFloat(e.data.meetingsHeight);
+    if (!height) return;
+    dialogs.forEach((d) => {
+      const iframe = d.querySelector("[data-modal-frame] iframe");
+      if (iframe && iframe.contentWindow === e.source) iframe.style.height = height + "px";
+    });
+  });
 
   function openModal(dialog, trigger) {
     if (dialog.open) return;
