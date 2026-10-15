@@ -43,6 +43,7 @@ const order = [
   'src/modules/resource-slider.js',
   'src/modules/resource-external-link.js',
   'src/modules/hubspot-modals.js',
+  'src/modules/lottie.js',
 
   'src/core/master-init.js'
 ];

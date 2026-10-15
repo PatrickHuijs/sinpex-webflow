@@ -35,7 +35,8 @@ function initPageScripts() {
     initWebinarSlider,
     initFadeSliders,
     initLayerStack,
-    initHubspotModals
+    initHubspotModals,
+    initLottieAnimations
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
