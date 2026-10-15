@@ -42,6 +42,7 @@ const order = [
   'src/modules/webinar-slider.js',
   'src/modules/resource-slider.js',
   'src/modules/resource-external-link.js',
+  'src/modules/hubspot-modals.js',
 
   'src/core/master-init.js'
 ];
