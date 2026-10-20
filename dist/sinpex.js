@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.13.0 | built 2026-10-15 */
+/*! Sinpex Webflow scripts v1.14.0 | built 2026-10-20 */
 
 /* ===== src/vendor/feedbucket.js ===== */
 /*
@@ -4322,105 +4322,82 @@ function initHubspotModals() {
 }
 
 
-/* ===== src/modules/lottie.js ===== */
+/* ===== src/modules/layer-video.js ===== */
 /*
- * Lottie: plays a Lottie (.json URL, e.g. on Bunny) when it scrolls into view. Based on Osmo's Lottie Setup.
- * Markup: [data-lottie][data-lottie-src="<url to .json>"] (optional [data-lottie-frame="<n>"]: still frame for reduced motion)
- *   Layer feature: div.layer-feature_lottie inside .layer-feature_visual, src bound to the Lottie URL prop.
- *   Empty src: the element is hidden by CSS and the image shows instead (Section / Layer features embed).
- * - lottie-web is only fetched on pages that have a Lottie with a src, once, from jsDelivr.
- * - Each Lottie loads when it is half a viewport away, plays in view and pauses out of view.
- * - Reduced motion: shows a still frame (data-lottie-frame, default 0) instead of playing.
- * - If the file fails to load, [data-lottie-failed] is set so the CSS shows the image again.
- * - Destroyed on Barba page changes.
+ * Layer video: plays a muted looping MP4 (e.g. on Bunny) when it scrolls into view. Replaces the Lottie setup.
+ * Markup: video[data-layer-video][data-layer-video-src="<url to .mp4>"]
+ *   Layer feature: video.layer-feature_video inside .layer-feature_visual, src bound to the Video URL prop.
+ *   Empty src: the video is hidden by CSS and the image shows instead (Section / Layer features embed).
+ * - Each video loads when it is half a viewport away, plays in view and pauses out of view.
+ * - The image stays visible until the first frame plays ([data-layer-video-status="playing"]), so there is no black flash.
+ * - Reduced motion: the video is never loaded and the image stays.
+ * - If the file fails to load, [data-layer-video-failed] is set so the CSS keeps the image.
+ * - Unloaded on Barba page changes.
  */
-const LOTTIE_LIB = "https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js";
-let lottieLibPromise = null;
-
-function loadLottieLib() {
-  if (window.lottie) return Promise.resolve(window.lottie);
-  if (lottieLibPromise) return lottieLibPromise;
-  lottieLibPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = LOTTIE_LIB;
-    script.async = true;
-    script.onload = () => (window.lottie ? resolve(window.lottie) : reject(new Error("lottie-web missing")));
-    script.onerror = () => {
-      lottieLibPromise = null;
-      reject(new Error("lottie-web failed to load"));
-    };
-    document.head.appendChild(script);
-  });
-  return lottieLibPromise;
-}
-
-function initLottieAnimations() {
-  const targets = Array.from(document.querySelectorAll("[data-lottie]")).filter(
-    (el) => (el.getAttribute("data-lottie-src") || "").trim() !== ""
+function initLayerVideos() {
+  const targets = Array.from(document.querySelectorAll("[data-layer-video]")).filter(
+    (el) => (el.getAttribute("data-layer-video-src") || "").trim() !== ""
   );
   if (!targets.length) return;
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const anims = [];
-  let destroyed = false;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   pageCleanups.push(() => {
-    destroyed = true;
-    anims.forEach((anim) => { try { anim.destroy(); } catch (e) {} });
-    targets.forEach((el) => {
-      el.removeAttribute("data-lottie-fired");
-      el.removeAttribute("data-lottie-failed");
+    targets.forEach((video) => {
+      try { video.pause(); } catch (e) {}
+      video.removeAttribute("src");
+      try { video.load(); } catch (e) {}
+      video.removeAttribute("data-layer-video-fired");
+      video.removeAttribute("data-layer-video-failed");
+      video.removeAttribute("data-layer-video-status");
     });
   });
 
-  const fail = (target) => target.setAttribute("data-lottie-failed", "true");
-
-  targets.forEach((target) => {
-    let anim = null;
+  targets.forEach((video) => {
     let inView = false;
 
-    function create() {
-      target.setAttribute("data-lottie-fired", "true");
-      loadLottieLib().then((lottie) => {
-        if (destroyed || !document.contains(target)) return;
-        anim = lottie.loadAnimation({
-          container: target,
-          renderer: "svg",
-          loop: true,
-          autoplay: false,
-          path: target.getAttribute("data-lottie-src").trim()
-        });
-        anims.push(anim);
-        anim.addEventListener("data_failed", () => fail(target));
-        anim.addEventListener("DOMLoaded", () => {
-          if (reduceMotion) {
-            anim.goToAndStop(parseInt(target.getAttribute("data-lottie-frame") || "0", 10) || 0, true);
-          } else if (inView) {
-            anim.play();
-          }
-        });
-      }).catch(() => fail(target));
+    // Autoplay only works muted and inline
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("muted", "");
+
+    const play = () => {
+      const p = video.play();
+      if (p && p.catch) p.catch(() => {});
+    };
+
+    video.addEventListener("playing", () => video.setAttribute("data-layer-video-status", "playing"));
+    video.addEventListener("error", () => video.setAttribute("data-layer-video-failed", "true"));
+    video.addEventListener("canplay", () => { if (inView) play(); });
+
+    function load() {
+      video.setAttribute("data-layer-video-fired", "true");
+      video.preload = "auto";
+      video.src = video.getAttribute("data-layer-video-src").trim();
+      video.load();
     }
 
     // Load half a viewport early
     ScrollTrigger.create({
-      trigger: target,
+      trigger: video,
       start: "top bottom+=50%",
       end: "bottom top-=50%",
-      onEnter: () => { if (!target.hasAttribute("data-lottie-fired")) create(); },
-      onEnterBack: () => { if (!target.hasAttribute("data-lottie-fired")) create(); }
+      onEnter: () => { if (!video.hasAttribute("data-layer-video-fired")) load(); },
+      onEnterBack: () => { if (!video.hasAttribute("data-layer-video-fired")) load(); }
     });
 
     // Play only while visible
     ScrollTrigger.create({
-      trigger: target,
+      trigger: video,
       start: "top bottom",
       end: "bottom top",
       onToggle: (self) => {
         inView = self.isActive;
-        if (!anim || reduceMotion || !anim.isLoaded) return;
-        if (inView) anim.play();
-        else anim.pause();
+        if (!video.hasAttribute("data-layer-video-fired")) return;
+        if (inView) play();
+        else video.pause();
       }
     });
   });
@@ -4466,7 +4443,7 @@ function initPageScripts() {
     initFadeSliders,
     initLayerStack,
     initHubspotModals,
-    initLottieAnimations
+    initLayerVideos
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

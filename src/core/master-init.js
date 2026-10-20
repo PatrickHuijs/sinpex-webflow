@@ -36,7 +36,7 @@ function initPageScripts() {
     initFadeSliders,
     initLayerStack,
     initHubspotModals,
-    initLottieAnimations
+    initLayerVideos
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
