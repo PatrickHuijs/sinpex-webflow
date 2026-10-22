@@ -36,6 +36,7 @@ function initPageScripts() {
     initFadeSliders,
     initLayerStack,
     initHubspotModals,
+    initHubspotForms,
     initLayerVideos
   ].forEach(safeInit);
 
