@@ -8,6 +8,8 @@
  * - With the mobile menu open, the leave first waits for the menu to close (window.closeNavMenu() returns a promise).
  *   A menu link to the current page never gets here: nav-menu.js closes the menu and scrolls to the top instead.
  * - Same-page anchor links (#section) are left to the browser so they still jump.
+ * - Language changes (locale switcher, links between / and /de/, back/forward across them) are full page loads,
+ *   because the nav, footer and <html lang> live outside the Barba container.
  */
 function pageLeave(data) {
   // An open mobile menu slides shut first; the page only starts leaving once it is closed.
@@ -50,14 +52,42 @@ function isSamePageAnchor(href) {
   }
 }
 
+// Locale of a path: the first segment when it is a secondary locale subdirectory (/de/...), '' for the primary locale.
+// Barba only swaps [data-barba="container"]; the nav (with the language switch), the footer and <html lang> sit outside it,
+// so a change of language must be a full page load, otherwise those parts stay in the old language.
+var LOCALE_DIRS = ['de'];
+function localeOf(pathname) {
+  var first = (pathname || '/').split('/')[1] || '';
+  return LOCALE_DIRS.indexOf(first.toLowerCase()) !== -1 ? first.toLowerCase() : '';
+}
+
+// True for links that switch language: a Webflow locale switcher link, or any link into another locale
+function isLocaleChange(href, el) {
+  if (el && el.closest && el.closest('.w-locales-list, [hreflang]')) return true;
+  if (!href) return false;
+  try {
+    var url = new URL(href, window.location.href);
+    if (url.origin !== window.location.origin) return false;
+    return localeOf(url.pathname) !== localeOf(window.location.pathname);
+  } catch (e) {
+    return false;
+  }
+}
+
 // A #hash change also fires popstate, which Barba would treat as a same-page
 // navigation and run the 'self' transition. Registered before barba.init so it
 // runs first and can stop Barba from seeing hash-only changes.
+// Back/forward into another language reloads the page, for the same reason as above.
 var barbaLastHref = window.location.href;
 window.addEventListener('popstate', function (e) {
   var prev = new URL(barbaLastHref);
   var next = new URL(window.location.href);
   barbaLastHref = window.location.href;
+  if (localeOf(prev.pathname) !== localeOf(next.pathname)) {
+    e.stopImmediatePropagation();
+    window.location.reload();
+    return;
+  }
   if (prev.pathname === next.pathname && prev.search === next.search && prev.hash !== next.hash) {
     e.stopImmediatePropagation();
   }
@@ -68,7 +98,7 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 barba.init({
   preventRunning: true, // a second click while a transition runs is ignored instead of forcing a full reload
-  prevent: ({ href }) => isSamePageAnchor(href),
+  prevent: ({ el, href }) => isSamePageAnchor(href) || isLocaleChange(href, el),
   transitions: [
     {
       name: 'fade-slide-transition',

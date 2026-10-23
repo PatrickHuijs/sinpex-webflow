@@ -24,7 +24,7 @@ build.js        bundles src/ in load order
 | core/gsap-setup.js | Registers GSAP plugins and `osmo-ease` | – |
 | core/cleanup-registry.js | `pageCleanups` + `runPageCleanups()` for Barba | – |
 | core/lenis.js | Lenis smooth scroll synced with ScrollTrigger | Site head (lenis.css) |
-| core/barba.js | Page transitions and lifecycle hooks; the leave waits for the mobile menu to close; clicks during a running transition are ignored; re-runs Webflow (data-wf-page, forms, IX2) after each swap; manual scroll restoration | – |
+| core/barba.js | Page transitions and lifecycle hooks; the leave waits for the mobile menu to close; clicks during a running transition are ignored; re-runs Webflow (data-wf-page, forms, IX2) after each swap; manual scroll restoration; language changes (locale switcher, links between `/` and `/de/`, back/forward across them) are full page loads because nav, footer and `<html lang>` sit outside the container | – |
 | core/master-init.js | `initPageScripts()`: runs every page init, first load and after each transition. Loads last. | – |
 | modules/card-stack.js | Platform card stack | Global Custom Code |
 | modules/metrics-counter.js | Number odometer | Site footer + Global Custom Code |
