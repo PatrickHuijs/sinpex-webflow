@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.19.0 | built 2026-10-23 */
+/*! Sinpex Webflow scripts v1.19.1 | built 2026-10-23 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -55,6 +55,8 @@ gsap.ticker.lagSmoothing(0);
  * - Same-page anchor links (#section) are left to the browser so they still jump.
  * - Language changes (locale switcher, links between / and /de/, back/forward across them) are full page loads,
  *   because the nav, footer and <html lang> live outside the Barba container.
+ * - After every swap the language switch links are copied from the new page, so the switch always points to the
+ *   current page in the other language (not to the page of the last full load).
  */
 function pageLeave(data) {
   // An open mobile menu slides shut first; the page only starts leaving once it is closed.
@@ -108,7 +110,7 @@ function localeOf(pathname) {
 
 // True for links that switch language: a Webflow locale switcher link, or any link into another locale
 function isLocaleChange(href, el) {
-  if (el && el.closest && el.closest('.w-locales-list, [hreflang]')) return true;
+  if (el && el.closest && el.closest('.w-locales-list, .lang-toggle, [hreflang]')) return true;
   if (!href) return false;
   try {
     var url = new URL(href, window.location.href);
@@ -185,8 +187,34 @@ function reinitWebflow(next) {
   }
 }
 
+// The language switch lives in the nav, outside the Barba container, so after a swap its links still point to the
+// page that was loaded first (a hard refresh on /faqs keeps sending the switch to /de/faqs). Copy the switch links
+// (href, current state) from the new page's HTML so the switch always leads to the same page in the other language.
+function syncLocaleSwitcher(next) {
+  if (!next || !next.html) return;
+  var current = Array.from(document.querySelectorAll('.w-locales-list a, .lang-toggle a'));
+  if (!current.length) return;
+  var incoming;
+  try {
+    incoming = Array.from(new DOMParser().parseFromString(next.html, 'text/html').querySelectorAll('.w-locales-list a, .lang-toggle a'));
+  } catch (e) {
+    return;
+  }
+  if (!incoming.length) return;
+  current.forEach(function (link, i) {
+    var lang = link.getAttribute('hreflang');
+    var match = (lang && incoming.find(function (a) { return a.getAttribute('hreflang') === lang; })) || incoming[i];
+    if (!match) return;
+    link.setAttribute('href', match.getAttribute('href'));
+    link.classList.toggle('w--current', match.classList.contains('w--current'));
+    if (match.hasAttribute('aria-current')) link.setAttribute('aria-current', match.getAttribute('aria-current'));
+    else link.removeAttribute('aria-current');
+  });
+}
+
 barba.hooks.after((data) => {
   barbaLastHref = window.location.href;
+  syncLocaleSwitcher(data && data.next);
   reinitWebflow(data && data.next);
   initPageScripts();
 });
