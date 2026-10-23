@@ -4362,8 +4362,9 @@ function initHubspotModals() {
 /* ===== src/modules/hubspot-forms.js ===== */
 /*
  * HubSpot forms, developer embed: the form renders as plain HTML in the page (hsfc-* classes), so the site CSS styles it.
- * Markup: div.hs-form-html[data-region][data-portal-id][data-form-id] on the Resources template
- * (Sign-up form, On-demand form and Event form in the webinar hero; data-form-id bound to the CMS fields).
+ * Markup: div.hs-form-html[data-region][data-portal-id][data-form-id]. Used by the Sign-up, On-demand and Event form in the
+ * webinar hero on the Resources template (data-form-id bound to the CMS fields) and by Section / Newsletter (HubSpot form ID
+ * prop: EN form by default, DE form in the DE locale).
  * HubSpot's developer loader (js-eu1.hsforms.net/forms/embed/developer/<portal>.js) renders every .hs-form-html on the
  * page when it runs. Afterwards it only renders an element that is itself added to the page, not one inside an added
  * container. Barba inserts the whole page container at once, so after a page change the form stays empty.
@@ -4373,7 +4374,7 @@ function initHubspotModals() {
  *   is swapped for a bare copy of itself. That copy is an added node the loader does see, so it renders the form.
  * - Elements without a form ID are skipped (HubSpot would not render them either).
  * - Never load the iframe loader (forms/embed/<portal>.js) next to this one: it would mount a second, iframe copy.
- * CSS lives in the webinar hero's embed on the Resources template.
+ * CSS: base styles in Global Custom Code > HubSpot forms; section overrides in the section's embed (Newsletter: dark card).
  */
 function initHubspotForms() {
   const forms = Array.from(document.querySelectorAll(".hs-form-html")).filter(
