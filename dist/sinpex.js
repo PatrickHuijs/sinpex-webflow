@@ -1,15 +1,4 @@
-/*! Sinpex Webflow scripts v1.17.0 | built 2026-10-23 */
-
-/* ===== src/vendor/feedbucket.js ===== */
-/*
- * Feedbucket feedback widget loader (was inline in site head).
- */
-    (function(k) {
-        let s=document.createElement('script');s.defer=true;
-        s.src="https://cdn.feedbucket.app/assets/feedbucket.js";
-        s.dataset.feedbucket=k;document.head.appendChild(s);
-    })('MaDqzUkrhstJI5YriV9R')
-
+/*! Sinpex Webflow scripts v1.18.0 | built 2026-10-23 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*

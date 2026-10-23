@@ -6,7 +6,6 @@ All custom JavaScript for the Sinpex Webflow site. CSS stays in Webflow (site he
 
 ```
 src/
-  vendor/     third-party loaders (Feedbucket)
   core/       run once: GSAP setup, cleanup registry, Lenis, Barba, master init
   modules/    one file per feature
 dist/

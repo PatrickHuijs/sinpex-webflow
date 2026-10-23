@@ -7,8 +7,6 @@ const { minify } = require('terser');
 const pkg = require('./package.json');
 
 const order = [
-  'src/vendor/feedbucket.js',
-
   'src/core/gsap-setup.js',
   'src/core/cleanup-registry.js',
   'src/core/lenis.js',
