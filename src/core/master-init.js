@@ -30,6 +30,7 @@ function initPageScripts() {
     initDraggableMarquee,
     initResourceExternalLinks,
     initResourceCtaLabels,
+    initCurrentYear,
     initResourceSlider,
     initImageSlider,
     initResourceLibrary,
