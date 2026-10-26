@@ -44,7 +44,7 @@ build.js        bundles src/ in load order
 | modules/logo-wall-cycle.js | Logo wall cycle | Global Custom Code |
 | modules/slider-video-lightbox.js | Slider video previews + Bunny lightbox | Site head |
 | modules/bunny-player.js | Bunny MP4 player (Section / Hero video) | Global Custom Code embed |
-| modules/layer-stack.js | Section / Layers partial sticky stack | Section / Layers embed |
+| modules/layer-stack.js | Section / Layers full sticky stack: every row sticks at the same top and fully covers the previous one; all rows release together | Section / Layers embed |
 | modules/fade-slider.js | Section / Testimonials fade slider | Section / Testimonials embed |
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
 | modules/faq.js | Section / FAQ accordion: top item open, optional one-open-at-a-time, ARIA (CMS FAQs) | Section / FAQ embed |
