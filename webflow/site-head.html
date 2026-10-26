@@ -43,6 +43,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   visibility: visible !important;
 }
 
+/* LANGUAGE SWITCH: the non-active language is more transparent. The active one carries w--current (kept in sync after Barba page changes by core/barba.js) and keeps its own opacity. */
+.lang-toggle_link:not(.w--current) { opacity: 0.5; }
+.lang-toggle_link:not(.w--current):hover,
+.lang-toggle_link:not(.w--current):focus-visible { opacity: 1; }
+
 </style>
 
 <!-- SLIDER VIDEO PREVIEW + OSMO BUNNY LIGHTBOX (MP4) -->
