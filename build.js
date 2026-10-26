@@ -40,6 +40,7 @@ const order = [
   'src/modules/webinar-slider.js',
   'src/modules/resource-slider.js',
   'src/modules/resource-external-link.js',
+  'src/modules/resource-cta-labels.js',
   'src/modules/hubspot-modals.js',
   'src/modules/hubspot-forms.js',
   'src/modules/layer-video.js',
