@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.23.0 | built 2026-10-28 */
+/*! Sinpex Webflow scripts v1.23.1 | built 2026-10-28 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -981,11 +981,19 @@ else document.addEventListener('DOMContentLoaded', initNav);
 /* ===== src/modules/nav-theme.js ===== */
 /*
  * Nav: base/dark theme switch by section on scroll.
+ * - Every section with a data-wf--section…--variant attribute counts; a variant name containing "dark" makes the nav dark
+ *   while that section sits under the navbar centre line.
+ * - Barba keeps both pages in the DOM from beforeEnter until after enter: the old container is only removed just before
+ *   the 'after' hook, and it still sits above the new one in the layout. So on beforeEnter the new page's sections are
+ *   scanned from data.next.container (not the first container in the DOM, which is the old page) and measured as they
+ *   will sit once the old page is gone and the scroll is back at the top. The nav is themed before the new page fades in,
+ *   with no second switch afterwards.
+ * - 'after' re-scans once the old page is gone, so scrolling on the new page always reads the live sections.
  */
 (function () {
   var DARK = 'dark-mode',
       VARIANT_CLASS = 'w-variant-e6ad70a9-35a7-3757-addd-ca744bb9940d'; // Nav "Dark mode" variant
-  var nav = null, sections = [], last = null, line = 60;
+  var nav = null, sections = [], last = null, line = 60, leaving = null;
 
   function css() {
     if (document.getElementById('nav-theme-css')) return;
@@ -1000,13 +1008,15 @@ else document.addEventListener('DOMContentLoaded', initNav);
     document.head.appendChild(s);
   }
 
-  function scan() {
+  // The page the nav should follow: the given container, else the last one in the DOM (the newest page)
+  function scan(container) {
     nav = document.querySelector('.nav_component');
     sections = [];
-    var scope = document.querySelector('[data-barba="container"]') || document.body,
-        all = scope.getElementsByTagName('section');
-    for (var i = 0; i < all.length; i++) {
-      var el = all[i], attrs = el.attributes;
+    var all = document.querySelectorAll('[data-barba="container"]'),
+        scope = container || all[all.length - 1] || document.body,
+        found = scope.getElementsByTagName('section');
+    for (var i = 0; i < found.length; i++) {
+      var el = found[i], attrs = el.attributes;
       for (var j = 0; j < attrs.length; j++) {
         var n = attrs[j].name;
         if (n.indexOf('data-wf--section') === 0 && n.slice(-9) === '--variant') {
@@ -1022,12 +1032,22 @@ else document.addEventListener('DOMContentLoaded', initNav);
     line = bar ? bar.getBoundingClientRect().top + bar.offsetHeight / 2 : 60; // switch line = navbar centre
   }
 
+  // While the old page is still in the DOM, the new page sits below it: measure the new sections as they will sit
+  // once the old page is removed and the scroll is at the top (shift = old page height - current scroll).
+  function shift() {
+    if (!leaving || !leaving.isConnected) {
+      leaving = null;
+      return 0;
+    }
+    return leaving.offsetHeight - window.scrollY;
+  }
+
   function update() {
     if (!nav) return;
-    var dark = false;
+    var offset = shift(), dark = false;
     for (var i = 0; i < sections.length; i++) {
       var r = sections[i].el.getBoundingClientRect();
-      if (r.top <= line && r.bottom > line) dark = sections[i].dark;
+      if (r.top - offset <= line && r.bottom - offset > line) dark = sections[i].dark;
     }
     if (dark === last) return;
     last = dark;
@@ -1035,15 +1055,26 @@ else document.addEventListener('DOMContentLoaded', initNav);
     nav.classList.toggle(VARIANT_CLASS, dark);
   }
 
-  function init() { last = null; css(); scan(); measure(); update(); }
+  function init(container) { last = null; css(); scan(container); measure(); update(); }
 
   function boot() {
     if (window.lenis && window.lenis.on) window.lenis.on('scroll', update);
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', function () { measure(); update(); });
-    // Set the correct variant BEFORE the new page fades in (single owner,
-    // no 50ms-late second switch), which is what was causing the flicker.
-    if (window.barba && window.barba.hooks) window.barba.hooks.beforeEnter(function () { init(); });
+    if (window.barba && window.barba.hooks) {
+      // Theme the nav from the new page before it fades in (single owner, no late second switch)
+      window.barba.hooks.beforeEnter(function (data) {
+        leaving = (data && data.current && data.current.container) || null;
+        init(data && data.next && data.next.container);
+      });
+      // Old page removed: drop the shift and re-scan the live page. Same result, so no visible change.
+      window.barba.hooks.after(function () {
+        leaving = null;
+        scan();
+        measure();
+        update();
+      });
+    }
     init();
   }
 

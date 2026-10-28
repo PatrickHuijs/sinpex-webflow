@@ -30,7 +30,7 @@ build.js        bundles src/ in load order
 | modules/metrics-counter.js | Number odometer | Site footer + Global Custom Code |
 | modules/text-split.js | Masked text reveal | Site head |
 | modules/nav-menu.js | Mobile menu + scroll background. Closes before a page change; a menu link to the current page only closes the menu and scrolls to the top | – |
-| modules/nav-theme.js | Nav base/dark switch per section | – |
+| modules/nav-theme.js | Nav base/dark switch per section. On a Barba swap it themes from the new container (data.next), measured as it will sit at the top once the old page is removed; re-scans on `after` | – |
 | modules/button-icon-recolour.js | Masked button icons | Site head |
 | modules/swiper-a11y.js | Swiper accessibility | – |
 | modules/logo-marquee.js | CSS logo marquee | Global Custom Code |
