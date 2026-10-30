@@ -20,7 +20,8 @@ function initResourceCtaLabels() {
   const LABELS = {
     "read article": "Artikel lesen",
     "watch webinar": "Webinar ansehen",
-    "read story": "Story lesen"
+    "read story": "Story lesen",
+    "view event": "Event ansehen"
   };
 
   document.querySelectorAll(".button_text, .button_link_text, .clickable_text").forEach((el) => {

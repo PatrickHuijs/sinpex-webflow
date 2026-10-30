@@ -5,7 +5,8 @@
  *           [data-webinars="list"] > [data-webinars="slide"] (each holds a Card / Resource)
  *           [data-webinars="progress"] (bars are built here), [data-webinars="prev"|"next"], [data-webinars="status"]
  * - Status comes from the item date, by calendar day only (no times): today or later = upcoming, before today = on demand.
- *   The date is read from the card's [data-resource-date] text (bound to the Date field), e.g. "August 5, 2026" or "2026-08-05".
+ *   The date is read from the card's [data-resource-date] value, else its text (bound to the Date field), e.g.
+ *   "August 5, 2026" or "2026-08-05". On German pages resource-meta-de.js keeps the original date in the attribute.
  *   An item without a readable date only shows under All.
  * - Order: furthest date first (e.g. Nov, Oct, today, Aug, Jun), in every tab. Items without a readable date go last.
  * - The track moves with GSAP; the last stop is clamped so the row never ends in empty space. One progress bar per stop.
@@ -42,7 +43,7 @@ function initWebinarSlider() {
 
   function dayOf(slide) {
     const el = slide.querySelector("[data-resource-date]");
-    return parseDay(slide.getAttribute("data-webinar-date") || (el ? el.textContent : ""));
+    return parseDay(slide.getAttribute("data-webinar-date") || (el ? el.getAttribute("data-resource-date") || el.textContent : ""));
   }
 
   wrappers.forEach((wrapper) => {

@@ -31,6 +31,7 @@ function initPageScripts() {
     initResourceExternalLinks,
     initExternalLinks,
     initResourceCtaLabels,
+    initResourceMetaDe,
     initCurrentYear,
     initResourceSlider,
     initImageSlider,

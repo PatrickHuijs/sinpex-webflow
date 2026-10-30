@@ -42,6 +42,7 @@ const order = [
   'src/modules/resource-external-link.js',
   'src/modules/external-links.js',
   'src/modules/resource-cta-labels.js',
+  'src/modules/resource-meta-de.js',
   'src/modules/current-year.js',
   'src/modules/hubspot-modals.js',
   'src/modules/hubspot-forms.js',

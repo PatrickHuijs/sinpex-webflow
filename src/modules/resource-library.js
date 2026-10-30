@@ -4,7 +4,8 @@
  *           [data-resources-filter="all" | "<Type option name>"] (buttons; "Case Study", "Article", "Webinar", "Event")
  *           [data-resources="list"][data-resources-per-page="4"] > [data-resources="item"] (each holds a Card / Resource)
  *           [data-resources="pagination"] (page buttons are built here), [data-resources="status"] (screen reader count)
- * - An item's type is read from the card's [data-resource-type] text, which is bound to the Type option field.
+ * - An item's type is read from the card's [data-resource-type] value, else its text (bound to the Type option field).
+ *   On German pages resource-meta-de.js keeps the English type in the attribute and shows the German label as text.
  * - Switching filter or page fades the list out and the new items in together; instant with reduced motion.
  * - Filtering resets to page 1. Paging scrolls back to the top of the library (instant with reduced motion).
  * - Pagination shows every page up to 5 pages, otherwise first, last and the pages around the current one with gaps.
@@ -33,7 +34,7 @@ function initResourceLibrary() {
 
     const typeOf = (item) => {
       const el = item.querySelector("[data-resource-type]");
-      return el ? el.textContent.trim().toLowerCase() : "";
+      return el ? (el.getAttribute("data-resource-type") || el.textContent).trim().toLowerCase() : "";
     };
     const types = items.map(typeOf);
 
