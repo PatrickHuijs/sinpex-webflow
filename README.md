@@ -79,7 +79,9 @@ https://cdn.jsdelivr.net/gh/PatrickHuijs/sinpex-webflow@<commit>/dist/sinpex.min
 
 1. Bump `version` in `package.json`, run `npm run build`, commit and push.
 2. Copy the full commit hash (`git rev-parse HEAD`).
-3. In Webflow footer custom code, replace the hash in the script URL and publish.
+3. In Webflow footer custom code, replace **only the hash** in the bundle script URL and publish. Leave everything else in the footer exactly as it is.
+
+> **Important:** the live footer holds more than this repo's copy in `webflow/site-footer.html`. Sinpex owns a "Sinpex journey capture" script right after the bundle line (first/last source, UTMs and GA ID into hidden fields on every HubSpot form and demo booking, used for HubSpot attribution). Never paste the repo copy over the live footer. Any other change to the footer or head code (consent and tracking live there) needs a heads-up to Sinpex first.
 
 Prefer tags? Create a release in GitHub (e.g. `v1.0.1`) and use `@v1.0.1` in the URL instead of the hash.
 
