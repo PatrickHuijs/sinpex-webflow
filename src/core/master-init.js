@@ -31,6 +31,7 @@ function initPageScripts() {
     initResourceExternalLinks,
     initExternalLinks,
     initResourceCtaLabels,
+    initSpotlightCardLinks,
     initResourceMetaDe,
     initCurrentYear,
     initResourceSlider,
