@@ -1,5 +1,9 @@
 /*
  * Osmo Bunny player (MP4) for Section / Hero video. CSS stays in the Global Custom Code embed.
+ *
+ * data-player-autoplay="true": a muted loop that starts when the centre of the player reaches the centre of the
+ * viewport, pauses out of view and picks up again on return. A pause by the visitor stands. A visitor who presses
+ * play before the centre is reached gets sound. Reduced motion turns autoplay off.
  */
 (function () {
   var cleanups = [];
@@ -58,9 +62,12 @@
       // Flags
       var updateSize = player.getAttribute('data-player-update-size'); // "true" | "cover" | "false"
       var lazyMode = player.getAttribute('data-player-lazy');          // "true" | "meta" | "false"
-      var autoplay = player.getAttribute('data-player-autoplay') === 'true';
+      var autoplay = (player.getAttribute('data-player-autoplay') || '').trim().toLowerCase() === 'true' &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var initialMuted = player.getAttribute('data-player-muted') === 'true';
       var pendingPlay = false;
+      var centerReached = false;
+      var pausedOutOfView = false;
       var isAttached = false;
       var rafId = null;
       var hoverTimer = null;
@@ -98,6 +105,7 @@
       // Toggle play / pause
       function togglePlay() {
         if (video.paused || video.ended) {
+          if (autoplay && !centerReached) { centerReached = true; setMutedState(false); } // pressed play before autoplay started
           attachMedia();
           pendingPlay = true;
           setStatus('loading');
@@ -265,18 +273,37 @@
         window.removeEventListener('pointermove', onPointerMoveGlobal);
       });
 
-      // In-view play / pause (autoplay only)
+      // Autoplay: start at the viewport centre, pause out of view, resume on return (see top of file)
       var io = null;
+      function resumePlay() {
+        attachMedia();
+        pendingPlay = true;
+        setStatus('loading');
+        var p = video.play();
+        if (p && typeof p.then === 'function') p.catch(function () {
+          // Blocked by the browser (e.g. iOS low power mode): back to the play button
+          pendingPlay = false;
+          if (video.paused) setStatus('ready');
+        });
+      }
+      function startAtCenter() {
+        if (centerReached) return;
+        var r = player.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top + r.height / 2 > window.innerHeight / 2) return;
+        centerReached = true;
+        resumePlay();
+      }
       if (autoplay) {
+        on(window, 'scroll', startAtCenter, { passive: true });
+        on(window, 'resize', startAtCenter);
+        startAtCenter();
         io = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {
-            if (entry.isIntersecting && entry.intersectionRatio > 0) {
-              attachMedia();
-              if (video.paused) { pendingPlay = true; setStatus('loading'); safePlay(video); }
-              else setStatus('playing');
-            } else if (!video.paused && !video.ended) {
-              video.pause();
-              setStatus('paused');
+            if (!entry.isIntersecting) {
+              if (!video.paused && !video.ended) { pausedOutOfView = true; video.pause(); }
+            } else if (pausedOutOfView) {
+              pausedOutOfView = false;
+              resumePlay();
             }
           });
         }, { threshold: 0.1 });
