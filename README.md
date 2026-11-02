@@ -43,7 +43,7 @@ build.js        bundles src/ in load order
 | modules/back-to-top.js | Back to top button | – |
 | modules/logo-wall-cycle.js | Logo wall cycle | Global Custom Code |
 | modules/slider-video-lightbox.js | Slider video previews + Bunny lightbox | Site head |
-| modules/bunny-player.js | Bunny MP4 player (Section / Hero video). data-player-autoplay="true": muted loop that starts when the player's centre reaches the viewport centre, pauses out of view, resumes when the centres line up again; pressing play before that gives sound; off with reduced motion | Global Custom Code embed |
+| modules/bunny-player.js | Bunny MP4 player (Section / Hero video). data-player-autoplay="true": muted loop that starts when the player's centre reaches the viewport centre, pauses when its top passes the viewport top and resumes when the top comes back in; pressing play before that gives sound; off with reduced motion | Global Custom Code embed |
 | modules/layer-stack.js | Section / Layers full sticky stack: every row sticks at the same top and fully covers the previous one; all rows release together | Section / Layers embed |
 | modules/fade-slider.js | Section / Testimonials fade slider | Section / Testimonials embed |
 | modules/capability-table.js | Section / Capabilities collapsible groups | Section / Capabilities embed |
