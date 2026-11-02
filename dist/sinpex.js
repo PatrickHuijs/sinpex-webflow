@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.30.0 | built 2026-11-02 */
+/*! Sinpex Webflow scripts v1.30.1 | built 2026-11-02 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -4714,7 +4714,7 @@ function initHubspotForms() {
  * Markup: video[data-layer-video][data-layer-video-src="<url to .mp4>"]
  *   Layer feature: video.layer-feature_video inside .layer-feature_visual, src bound to the Video URL prop.
  *   Empty src: the video is hidden by CSS and the image shows instead (Section / Layer features embed).
- * - Each video loads when it is half a viewport away and first plays when its centre reaches the viewport centre,
+ * - Each video loads when it is half a viewport away and first plays when its top reaches the viewport centre,
  *   so it starts when the section is clearly in view. After that it pauses when its centre hits the top of the
  *   viewport or when it leaves at the bottom, and plays again when it comes back past those lines.
  * - The image stays visible until the first frame plays ([data-layer-video-status="playing"]), so there is no black flash.
@@ -4742,7 +4742,7 @@ function initLayerVideos() {
 
   targets.forEach((video) => {
     let inView = false;
-    let started = false; // the centre of the video has reached the viewport centre
+    let started = false; // the top of the video has reached the viewport centre
 
     // Autoplay only works muted and inline
     video.muted = true;
@@ -4777,10 +4777,10 @@ function initLayerVideos() {
       onEnterBack: () => { if (!video.hasAttribute("data-layer-video-fired")) load(); }
     });
 
-    // First play: centre on centre
+    // First play: top of the video at the viewport centre
     ScrollTrigger.create({
       trigger: video,
-      start: "center center",
+      start: "top center",
       once: true,
       onEnter: () => {
         started = true;
