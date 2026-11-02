@@ -39,6 +39,7 @@ const order = [
   'src/modules/resource-library.js',
   'src/modules/webinar-slider.js',
   'src/modules/resource-slider.js',
+  'src/modules/related-resources.js',
   'src/modules/resource-external-link.js',
   'src/modules/external-links.js',
   'src/modules/resource-cta-labels.js',

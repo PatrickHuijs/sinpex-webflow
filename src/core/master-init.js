@@ -28,6 +28,7 @@ function initPageScripts() {
     initCapabilityTable,
     initFaq,
     initDraggableMarquee,
+    initRelatedResources,
     initResourceExternalLinks,
     initExternalLinks,
     initResourceCtaLabels,
