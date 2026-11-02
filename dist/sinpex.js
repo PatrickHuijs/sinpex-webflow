@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.27.1 | built 2026-11-02 */
+/*! Sinpex Webflow scripts v1.27.2 | built 2026-11-02 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -4041,6 +4041,10 @@ function initWebinarSlider() {
     };
     list.addEventListener("click", onClickCapture, true);
 
+    // The whole card is a link: stop the browser's own link drag so Draggable keeps the mouse
+    const onDragStart = (e) => e.preventDefault();
+    list.addEventListener("dragstart", onDragStart);
+
     const onPrev = () => goTo(index - 1);
     const onNext = () => goTo(index + 1);
     const onKey = (e) => {
@@ -4180,6 +4184,7 @@ function initWebinarSlider() {
       wrapper.removeEventListener("keydown", onKey);
       wrapper.removeEventListener("focusin", onFocusIn);
       list.removeEventListener("click", onClickCapture, true);
+      list.removeEventListener("dragstart", onDragStart);
       if (draggable) draggable.kill();
       gsap.killTweensOf([list, viewport, ...slides]);
       gsap.set([list, viewport, ...slides], { clearProps: "opacity,transform" });
