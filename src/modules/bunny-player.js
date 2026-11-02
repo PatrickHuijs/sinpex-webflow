@@ -1,12 +1,8 @@
 /*
  * Osmo Bunny player (MP4) for Section / Hero video. CSS stays in the Global Custom Code embed.
  *
- * data-player-autoplay="true": a muted loop that starts when the centre of the player reaches the centre of the
- * viewport. It pauses when the top of the player passes the top of the viewport and resumes when the top comes back
- * in. Scrolled away the other way (below the viewport) it pauses out of view and resumes at the centre. A player taller
- * than the viewport can't use the top line, so it pauses out of view and resumes at the centre in both directions.
- * A pause by the visitor stands. A visitor who presses play before the centre is reached gets sound.
- * Reduced motion turns autoplay off.
+ * data-player-autoplay="true": a muted loop that plays as soon as any part of the player is in view and pauses when it
+ * is completely out of view. A pause by the visitor stands. Reduced motion turns autoplay off.
  */
 (function () {
   var cleanups = [];
@@ -69,10 +65,8 @@
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var initialMuted = player.getAttribute('data-player-muted') === 'true';
       var pendingPlay = false;
-      var centerReached = false;
+      var autoplayStarted = false;
       var pausedOutOfView = false;
-      var pausedAbove = false; // the player sits above the viewport centre line while paused
-      var topPassed = false;   // the top of the player is above the top of the viewport
       var isAttached = false;
       var rafId = null;
       var hoverTimer = null;
@@ -110,7 +104,6 @@
       // Toggle play / pause
       function togglePlay() {
         if (video.paused || video.ended) {
-          if (autoplay && !centerReached) { centerReached = true; setMutedState(false); } // pressed play before autoplay started
           attachMedia();
           pendingPlay = true;
           setStatus('loading');
@@ -278,7 +271,7 @@
         window.removeEventListener('pointermove', onPointerMoveGlobal);
       });
 
-      // Autoplay: start at the viewport centre, pause out of view, resume on return (see top of file)
+      // Autoplay: play when any part is in view, pause when completely out of view (see top of file)
       var io = null;
       function resumePlay() {
         attachMedia();
@@ -291,42 +284,21 @@
           if (video.paused) setStatus('ready');
         });
       }
-      function pauseForScroll(above) {
-        pausedAbove = above;
-        pausedOutOfView = true;
-        video.pause();
-      }
-      function checkScroll() {
-        var r = player.getBoundingClientRect();
-        var offset = r.top + r.height / 2 - window.innerHeight / 2; // player centre vs viewport centre
-        var fits = r.height < window.innerHeight;
-        var justPassedTop = fits && r.top <= 0 && !topPassed;
-        topPassed = fits && r.top <= 0;
-        if (!centerReached) {
-          if (r.bottom <= 0 || topPassed || offset > 0) return;
-          centerReached = true;
-          resumePlay();
-          return;
-        }
-        if (justPassedTop && !video.paused && !video.ended) { pauseForScroll(true); return; }
-        if (!pausedOutOfView) return;
-        if (r.bottom <= 0 || r.top >= window.innerHeight) { pausedAbove = offset < 0; return; }
-        if (pausedAbove ? (fits ? !topPassed : offset >= 0) : offset <= 0) {
-          pausedOutOfView = false;
-          resumePlay();
-        }
-      }
       if (autoplay) {
-        on(window, 'scroll', checkScroll, { passive: true });
-        on(window, 'resize', checkScroll);
-        checkScroll();
         io = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {
-            if (entry.isIntersecting || video.paused || video.ended) return;
-            var r = player.getBoundingClientRect();
-            pauseForScroll(r.top + r.height / 2 < window.innerHeight / 2);
+            if (entry.isIntersecting) {
+              if (!autoplayStarted || pausedOutOfView) {
+                autoplayStarted = true;
+                pausedOutOfView = false;
+                resumePlay();
+              }
+            } else if (!video.paused && !video.ended) {
+              pausedOutOfView = true;
+              video.pause();
+            }
           });
-        }, { threshold: 0.1 });
+        });
         io.observe(player);
       }
 
