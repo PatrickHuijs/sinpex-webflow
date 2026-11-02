@@ -1,9 +1,13 @@
 /*
- * Lenis smooth scroll, initialised once and synced with ScrollTrigger.
+ * Lenis, initialised once and synced with ScrollTrigger.
+ *
+ * Mouse wheel, trackpad and touch are native browser scrolling (smoothWheel and syncTouch off).
+ * Lenis stays for what the site calls on it: scrollTo (page transitions, back to top, nav, pagination),
+ * stop/start (scroll locks) and its scroll event. lerp only applies to those scrollTo calls.
  */
 const lenis = new Lenis({
   lerp: 0.07,
-  smoothWheel: true,
+  smoothWheel: false,
   syncTouch: false
 });
 
