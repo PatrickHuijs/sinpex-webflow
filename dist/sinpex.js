@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.26.2 | built 2026-11-02 */
+/*! Sinpex Webflow scripts v1.27.0 | built 2026-11-02 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -4686,7 +4686,8 @@ function initHubspotForms() {
  * Markup: video[data-layer-video][data-layer-video-src="<url to .mp4>"]
  *   Layer feature: video.layer-feature_video inside .layer-feature_visual, src bound to the Video URL prop.
  *   Empty src: the video is hidden by CSS and the image shows instead (Section / Layer features embed).
- * - Each video loads when it is half a viewport away, plays in view and pauses out of view.
+ * - Each video loads when it is half a viewport away and first plays when its centre reaches the viewport centre,
+ *   so it starts when the section is clearly in view. After that it pauses out of view and plays again in view.
  * - The image stays visible until the first frame plays ([data-layer-video-status="playing"]), so there is no black flash.
  * - Reduced motion: the video is never loaded and the image stays.
  * - If the file fails to load, [data-layer-video-failed] is set so the CSS keeps the image.
@@ -4712,6 +4713,7 @@ function initLayerVideos() {
 
   targets.forEach((video) => {
     let inView = false;
+    let started = false; // the centre of the video has reached the viewport centre
 
     // Autoplay only works muted and inline
     video.muted = true;
@@ -4728,7 +4730,7 @@ function initLayerVideos() {
 
     video.addEventListener("playing", () => video.setAttribute("data-layer-video-status", "playing"));
     video.addEventListener("error", () => video.setAttribute("data-layer-video-failed", "true"));
-    video.addEventListener("canplay", () => { if (inView) play(); });
+    video.addEventListener("canplay", () => { if (inView && started) play(); });
 
     function load() {
       video.setAttribute("data-layer-video-fired", "true");
@@ -4746,6 +4748,17 @@ function initLayerVideos() {
       onEnterBack: () => { if (!video.hasAttribute("data-layer-video-fired")) load(); }
     });
 
+    // First play: centre on centre
+    ScrollTrigger.create({
+      trigger: video,
+      start: "center center",
+      once: true,
+      onEnter: () => {
+        started = true;
+        if (inView && video.hasAttribute("data-layer-video-fired")) play();
+      }
+    });
+
     // Play only while visible
     ScrollTrigger.create({
       trigger: video,
@@ -4754,8 +4767,8 @@ function initLayerVideos() {
       onToggle: (self) => {
         inView = self.isActive;
         if (!video.hasAttribute("data-layer-video-fired")) return;
-        if (inView) play();
-        else video.pause();
+        if (!inView) video.pause();
+        else if (started) play();
       }
     });
   });
