@@ -49,6 +49,7 @@ const order = [
   'src/modules/hubspot-modals.js',
   'src/modules/hubspot-forms.js',
   'src/modules/layer-video.js',
+  'src/modules/spotlight-video.js',
 
   'src/core/master-init.js'
 ];
