@@ -46,7 +46,8 @@ function initPageScripts() {
     initLayerVideos,
     initSpotlightVideos,
     initArticleToc,
-    initArticleAuthorSchema
+    initArticleAuthorSchema,
+    initAnimateInview
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
