@@ -50,6 +50,7 @@ const order = [
   'src/modules/hubspot-forms.js',
   'src/modules/layer-video.js',
   'src/modules/spotlight-video.js',
+  'src/modules/article-toc.js',
 
   'src/core/master-init.js'
 ];

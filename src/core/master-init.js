@@ -44,7 +44,8 @@ function initPageScripts() {
     initHubspotModals,
     initHubspotForms,
     initLayerVideos,
-    initSpotlightVideos
+    initSpotlightVideos,
+    initArticleToc
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
