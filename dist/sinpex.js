@@ -5182,7 +5182,9 @@ function initArticleAuthorSchema() {
 
 /* ===== src/modules/animate-inview.js ===== */
 /*
- * Animated SVG graphics that play only while in view (opt-in: data-animate-inview on the wrapper, e.g. .spx-gfx).
+ * Animated SVG graphics that play only while in view. Runs on every article graphic wrapper (.spx-gfx) and on any
+ * other wrapper with data-animate-inview. Only SVGs that actually animate (CSS @keyframes or SMIL) are touched;
+ * static SVGs stay a plain <img>.
  *
  * An SVG loaded as <img> starts animating on load and can't be paused. This swaps each visible <img> in the wrapper
  * for the same SVG inlined in a shadow root (its <style>, keyframes and ids stay scoped, so generic class names
@@ -5205,6 +5207,10 @@ function animateInviewSwap(img) {
       const doc = new DOMParser().parseFromString(text, "image/svg+xml");
       const svg = doc.documentElement;
       if (!svg || svg.nodeName.toLowerCase() !== "svg" || doc.querySelector("parsererror")) throw new Error("not an svg");
+      if (!/@keyframes|<animate/i.test(text)) {
+        img.dataset.animateInviewDone = "static";
+        return null;
+      }
       svg.querySelectorAll("script, foreignObject").forEach((el) => el.remove());
 
       const host = document.createElement("div");
@@ -5229,6 +5235,7 @@ function animateInviewSwap(img) {
       return host;
     })
     .catch(() => {
+      if (img.dataset.animateInviewDone === "static") return null;
       delete img.dataset.animateInviewDone;
       img.dataset.animateInviewFailed = "true";
       return null;
@@ -5248,7 +5255,7 @@ function animateInviewReset(host) {
 }
 
 function initAnimateInview() {
-  const wrappers = Array.from(document.querySelectorAll("[data-animate-inview]"));
+  const wrappers = Array.from(document.querySelectorAll("[data-animate-inview], .spx-gfx"));
   if (!wrappers.length || !("IntersectionObserver" in window) || !document.body.attachShadow) return;
 
   const observer = new IntersectionObserver(
