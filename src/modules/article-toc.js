@@ -1,29 +1,107 @@
 /*
- * Article table of contents: highlights the section in view.
- * Markup (CMS rich text, Resources template):
- *   nav.article-toc--side ol li a[href="#id"]   side TOC (desktop)
- *   span.article-anchor#id                       in its own embed, directly before each H2
- * The side TOC link of the last section whose H2 has passed the top third of the viewport gets .is-active.
- * Before the first H2 nothing is active. The folding TOC (details.article-toc--fold) is left alone.
- * Reads positions on scroll (native and Lenis scrollTo both fire window scroll) and resize, once per frame.
- * Only runs on pages with .article-toc--side. Listeners are removed through pageCleanups on a Barba page change.
- * CSS: .article_rich-text .article-toc--side a.is-active (Section / Article content embed).
+ * Article table of contents (Resources template, CMS rich text .article_rich-text).
+ *
+ * 1. Builds the TOC from the H2s. Every .article-toc in the rich text (side TOC nav.article-toc--side and the
+ *    folding TOC details.article-toc--fold) gets its <ol> filled with one link per H2, labelled with the H2 text.
+ *    Editors only place the TOC shells (label "In this article" + empty <ol>); any links already in them are replaced.
+ *    Anchors: the span.article-anchor directly before an H2 is reused (its id stays the link target);
+ *    an H2 without one gets a new span.article-anchor with an id made from its text, inserted right before it.
+ *    Long labels are cut to 2 lines in CSS (Section / Article content embed).
+ * 2. Highlights the section in view in the side TOC: the link of the last section whose H2 has passed the top third
+ *    of the viewport gets .is-active; nothing before the first H2. The folding TOC is not highlighted.
+ *
+ * Only runs on pages with a .article-toc inside .article_rich-text. Scroll/resize listeners are removed through
+ * pageCleanups on a Barba page change. On a direct load with a #hash of a generated anchor, scrolls to it once built.
  */
-function initArticleToc() {
-  const toc = document.querySelector(".article-toc--side");
-  if (!toc) return;
+// Anchor id from the H2 text: lowercase, no accents (ß → ss), hyphens; cut to 50 characters on a whole word
+function articleTocSlug(text) {
+  let slug = text
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (slug.length > 50) {
+    slug = slug.slice(0, 51);
+    slug = slug.indexOf("-") > -1 ? slug.slice(0, slug.lastIndexOf("-")) : slug.slice(0, 50);
+  }
+  return slug || "section";
+}
 
-  // Pair each TOC link with the H2 that follows its anchor (falls back to the anchor itself)
-  const items = [];
-  toc.querySelectorAll('a[href^="#"]').forEach((link) => {
-    const id = decodeURIComponent(link.getAttribute("href").slice(1));
-    const anchor = id ? document.getElementById(id) : null;
-    if (!anchor) return;
-    const holder = anchor.parentElement;
-    const next = holder && holder.nextElementSibling;
-    const heading = next && next.tagName === "H2" ? next : anchor;
-    items.push({ link, heading });
+function buildArticleToc(richText) {
+  const sections = [];
+  richText.querySelectorAll(":scope > h2").forEach((heading) => {
+    const label = heading.textContent.replace(/\s+/g, " ").trim();
+    if (!label) return;
+
+    // Reuse the anchor right before the H2 (in its own embed, or as a direct sibling)
+    const prev = heading.previousElementSibling;
+    let anchor = null;
+    if (prev && prev.matches(".article-anchor[id]")) anchor = prev;
+    else if (prev && prev.children.length === 1 && prev.firstElementChild.matches(".article-anchor[id]")) anchor = prev.firstElementChild;
+
+    if (!anchor) {
+      const base = articleTocSlug(label);
+      let id = base;
+      let n = 2;
+      while (document.getElementById(id)) id = base + "-" + n++;
+      anchor = document.createElement("span");
+      anchor.className = "article-anchor";
+      anchor.id = id;
+      anchor.setAttribute("aria-hidden", "true");
+      heading.parentNode.insertBefore(anchor, heading);
+    }
+    sections.push({ id: anchor.id, label, heading });
   });
+
+  richText.querySelectorAll(".article-toc").forEach((toc) => {
+    let list = toc.querySelector("ol");
+    if (!list) {
+      list = document.createElement("ol");
+      (toc.querySelector(".article-toc_inner") || toc).appendChild(list);
+    }
+    list.textContent = "";
+    sections.forEach((section) => {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = "#" + section.id;
+      link.textContent = section.label;
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+  });
+
+  return sections;
+}
+
+function initArticleToc() {
+  const richText = Array.from(document.querySelectorAll(".article_rich-text")).find((el) => el.querySelector(".article-toc"));
+  if (!richText) return;
+
+  const hash = decodeURIComponent(window.location.hash.slice(1));
+  const hadTarget = hash ? !!document.getElementById(hash) : true;
+
+  const sections = buildArticleToc(richText);
+  if (!sections.length) return;
+
+  // Direct load on a #hash that only exists now the anchors are built: jump there
+  if (!hadTarget) {
+    const target = document.getElementById(hash);
+    if (target) {
+      requestAnimationFrame(() => {
+        if (window.lenis) window.lenis.scrollTo(target, { immediate: true, force: true });
+        else target.scrollIntoView();
+      });
+    }
+  }
+
+  // Highlight the section in view in the side TOC
+  const side = richText.querySelector(".article-toc--side");
+  if (!side) return;
+  const items = sections
+    .map((section) => ({ link: side.querySelector('a[href="#' + CSS.escape(section.id) + '"]'), heading: section.heading }))
+    .filter((item) => item.link);
   if (!items.length) return;
 
   let current = null;
