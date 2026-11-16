@@ -10,9 +10,15 @@
  * 2. Highlights the section in view in the side TOC: the link of the last section whose H2 has passed the top third
  *    of the viewport gets .is-active; nothing before the first H2. The folding TOC is not highlighted.
  *
- * Only runs on pages with a .article-toc inside .article_rich-text. Scroll/resize listeners are removed through
- * pageCleanups on a Barba page change. On a direct load with a #hash of a generated anchor, scrolls to it once built.
+ * 3. Articles without TOC shells get them added: on a resource page (Section / Resource hero present) whose rich text
+ *    has 2+ H2s, a missing side TOC is placed at the top of the rich text and a missing folding TOC right before the
+ *    first H2 (after the Key takeaways when those sit there). Label "In this article", or "In diesem Artikel" on /de.
+ *
+ * Runs on pages with a .article-toc inside .article_rich-text, or a resource page as above. Scroll/resize listeners
+ * are removed through pageCleanups on a Barba page change. On a direct load with a #hash of a generated anchor,
+ * scrolls to it once built.
  */
+const ARTICLE_TOC_MIN_H2 = 2;
 // Anchor id from the H2 text: lowercase, no accents (ß → ss), hyphens; cut to 50 characters on a whole word
 function articleTocSlug(text) {
   let slug = text
@@ -27,6 +33,52 @@ function articleTocSlug(text) {
     slug = slug.indexOf("-") > -1 ? slug.slice(0, slug.lastIndexOf("-")) : slug.slice(0, 50);
   }
   return slug || "section";
+}
+
+// Adds the side and/or folding TOC shell when the editor did not place one
+function addArticleTocShells(richText) {
+  const hasSide = !!richText.querySelector(".article-toc--side");
+  const hasFold = !!richText.querySelector(".article-toc--fold");
+  if (hasSide && hasFold) return;
+
+  const lang = (document.documentElement.lang || "").toLowerCase();
+  const label = lang.indexOf("de") === 0 ? "In diesem Artikel" : "In this article";
+
+  if (!hasSide) {
+    const wrap = document.createElement("div");
+    wrap.setAttribute("data-toc-auto", "");
+    const nav = document.createElement("nav");
+    nav.className = "article-toc article-toc--side";
+    nav.setAttribute("aria-label", label);
+    const inner = document.createElement("div");
+    inner.className = "article-toc_inner";
+    const title = document.createElement("p");
+    title.className = "article-box_label";
+    title.textContent = label;
+    inner.appendChild(title);
+    inner.appendChild(document.createElement("ol"));
+    nav.appendChild(inner);
+    wrap.appendChild(nav);
+    richText.insertBefore(wrap, richText.firstChild);
+  }
+
+  if (!hasFold) {
+    const fold = document.createElement("details");
+    fold.className = "article-toc article-toc--fold";
+    fold.setAttribute("data-toc-auto", "");
+    const summary = document.createElement("summary");
+    const title = document.createElement("span");
+    title.className = "article-box_label";
+    title.textContent = label;
+    summary.appendChild(title);
+    fold.appendChild(summary);
+    fold.appendChild(document.createElement("ol"));
+    // Before the first H2, and before its anchor (own embed or direct sibling) when it has one
+    let before = richText.querySelector(":scope > h2");
+    const prev = before.previousElementSibling;
+    if (prev && (prev.matches(".article-anchor") || (prev.children.length === 1 && prev.firstElementChild.matches(".article-anchor")))) before = prev;
+    richText.insertBefore(fold, before);
+  }
 }
 
 function buildArticleToc(richText) {
@@ -79,8 +131,13 @@ function buildArticleToc(richText) {
 }
 
 function initArticleToc() {
-  const richText = Array.from(document.querySelectorAll(".article_rich-text")).find((el) => el.querySelector(".article-toc"));
+  const richTexts = Array.from(document.querySelectorAll(".article_rich-text"));
+  let richText = richTexts.find((el) => el.querySelector(".article-toc"));
+  if (!richText && document.querySelector(".resource-hero_header")) {
+    richText = richTexts.find((el) => el.querySelectorAll(":scope > h2").length >= ARTICLE_TOC_MIN_H2);
+  }
   if (!richText) return;
+  if (richText.querySelectorAll(":scope > h2").length >= ARTICLE_TOC_MIN_H2) addArticleTocShells(richText);
 
   const hash = decodeURIComponent(window.location.hash.slice(1));
   const hadTarget = hash ? !!document.getElementById(hash) : true;
