@@ -51,6 +51,7 @@ const order = [
   'src/modules/layer-video.js',
   'src/modules/spotlight-video.js',
   'src/modules/article-toc.js',
+  'src/modules/article-author-schema.js',
 
   'src/core/master-init.js'
 ];
