@@ -66,7 +66,10 @@ function buildArticleToc(richText) {
       const item = document.createElement("li");
       const link = document.createElement("a");
       link.href = "#" + section.id;
-      link.textContent = section.label;
+      const text = document.createElement("span");
+      text.className = "article-toc_text"; // the 2-line clamp sits on this span, so the link keeps its padding
+      text.textContent = section.label;
+      link.appendChild(text);
       item.appendChild(link);
       list.appendChild(item);
     });
