@@ -53,6 +53,8 @@ const order = [
   'src/modules/article-toc.js',
   'src/modules/article-author-schema.js',
   'src/modules/animate-inview.js',
+  'src/modules/glossary-schema.js',
+  'src/modules/glossary-autolink.js',
 
   'src/core/master-init.js'
 ];

@@ -47,7 +47,9 @@ function initPageScripts() {
     initSpotlightVideos,
     initArticleToc,
     initArticleAuthorSchema,
-    initAnimateInview
+    initAnimateInview,
+    initGlossarySchema,
+    initGlossaryAutolink
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
