@@ -48,7 +48,13 @@ function glossaryFetchTerms(prefix) {
       } catch (e) {}
       return terms;
     })
-    .catch(() => []);
+    .catch(() => {
+      // No overview page yet (or offline): remember that for the hour too, so articles don't refetch it
+      try {
+        sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), terms: [] }));
+      } catch (e) {}
+      return [];
+    });
 }
 
 function glossaryLinkTerms(richText, terms) {
