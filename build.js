@@ -55,6 +55,7 @@ const order = [
   'src/modules/animate-inview.js',
   'src/modules/glossary-schema.js',
   'src/modules/glossary-autolink.js',
+  'src/modules/glossary-filter.js',
 
   'src/core/master-init.js'
 ];
