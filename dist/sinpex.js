@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.39.1 | built 2026-11-18 */
+/*! Sinpex Webflow scripts v1.39.2 | built 2026-11-18 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -5315,10 +5315,11 @@ function initAnimateInview() {
  * Glossary structured data (Glossary terms template and the glossary overview page).
  *
  * Term page (an element with data-glossary-term, normally the template's main section):
- *   - gives the DefinedTerm from the template's page settings (head) an @id and url (the canonical URL), so the
- *     other nodes can point at it;
- *   - adds a WebPage: name, url, inLanguage, isPartOf the glossary set, about + mainEntity the term,
- *     publisher Sinpex (#organization), and, when filled, reviewedBy (Person) and lastReviewed;
+ *   - completes the schema from the template's page settings (JSON-LD field: a DefinedTerm, or an @graph with
+ *     DefinedTerm and WebPage): @id and url (the canonical URL) on the term, the glossary set in the page language,
+ *     and on the WebPage url, inLanguage, isPartOf, about + mainEntity; empty values (alternateName, reviewer,
+ *     date) are dropped and the date becomes YYYY-MM-DD;
+ *   - adds a WebPage when the page settings schema has none, with publisher Sinpex and, when filled, the reviewer;
  *   - adds a BreadcrumbList: Home > Glossary > term.
  *   Attributes on the data-glossary-term element (bound to CMS fields in Webflow; empty ones are skipped):
  *     data-glossary-reviewer-name, data-glossary-reviewer-role, data-glossary-reviewer-image,
@@ -5399,25 +5400,74 @@ function glossaryBreadcrumb(items) {
 function glossaryTermSchema(el, loc) {
   const url = glossaryUrl(glossaryPagePath());
   const termId = url + "#term";
+  const pageId = url + "#webpage";
   const setUrl = glossaryUrl(loc.prefix + "/glossary");
   const set = { "@type": "DefinedTermSet", "@id": setUrl + "#glossary", name: loc.setName, url: setUrl };
 
-  // The template's own DefinedTerm (head): add @id, url and the set in the current language
+  // Reviewer and date from the data attributes (fallback when the page settings schema has none)
+  const reviewerName = glossaryAttr(el, "data-glossary-reviewer-name");
+  let reviewer = null;
+  if (reviewerName) {
+    reviewer = { "@type": "Person", name: reviewerName, worksFor: { "@id": GLOSSARY_ORG["@id"] } };
+    const role = glossaryAttr(el, "data-glossary-reviewer-role");
+    const image = glossaryAttr(el, "data-glossary-reviewer-image");
+    const linkedin = glossaryAttr(el, "data-glossary-reviewer-linkedin");
+    if (role) reviewer.jobTitle = role;
+    if (/^https?:\/\//.test(image)) reviewer.image = image;
+    if (/^https?:\/\//.test(linkedin)) {
+      reviewer.url = linkedin;
+      reviewer.sameAs = [linkedin];
+    }
+  }
+  const reviewedAttr = glossaryIsoDate(glossaryAttr(el, "data-glossary-last-reviewed"));
+
+  // Completes the term node: @id, url, the set in the current language, no empty alternateName
+  function fixTerm(term) {
+    term["@id"] = termId;
+    term.url = url;
+    term.inDefinedTermSet = set;
+    if (!term.alternateName) delete term.alternateName;
+  }
+
+  // Completes the page node: ids and links, ISO date, reviewer only when it has a name
+  function fixPage(page) {
+    page["@id"] = pageId;
+    page.url = url;
+    if (!page.name) page.name = document.title;
+    page.inLanguage = loc.lang;
+    page.isPartOf = set;
+    page.about = { "@id": termId };
+    page.mainEntity = { "@id": termId };
+    if (!page.publisher) page.publisher = GLOSSARY_ORG;
+    const reviewed = glossaryIsoDate(page.lastReviewed) || reviewedAttr;
+    if (reviewed) page.lastReviewed = reviewed;
+    else delete page.lastReviewed;
+    if (page.reviewedBy && !page.reviewedBy.name) delete page.reviewedBy;
+    if (page.reviewedBy && !page.reviewedBy.jobTitle) delete page.reviewedBy.jobTitle;
+    if (!page.reviewedBy && reviewer) page.reviewedBy = reviewer;
+  }
+
+  // The template's own schema (page settings): a DefinedTerm on its own, or an @graph with DefinedTerm and WebPage
   let termName = "";
+  let hasPage = false;
   Array.from(document.querySelectorAll('script[type="application/ld+json"]')).forEach((script) => {
-    if (!/"DefinedTerm"/.test(script.textContent) || script.hasAttribute("data-glossary-schema")) return;
+    if (script.hasAttribute("data-glossary-schema") || !/"DefinedTerm"/.test(script.textContent)) return;
     let data;
     try {
       data = JSON.parse(script.textContent);
     } catch (e) {
       return;
     }
-    if (data["@type"] !== "DefinedTerm") return;
-    data["@id"] = termId;
-    data.url = url;
-    data.inDefinedTermSet = set;
-    if (!data.alternateName) delete data.alternateName;
-    termName = data.name || "";
+    const nodes = Array.isArray(data["@graph"]) ? data["@graph"] : [data];
+    nodes.forEach((node) => {
+      if (node["@type"] === "DefinedTerm") {
+        fixTerm(node);
+        termName = node.name || termName;
+      } else if (node["@type"] === "WebPage") {
+        fixPage(node);
+        hasPage = true;
+      }
+    });
     script.textContent = JSON.stringify(data);
   });
   if (!termName) {
@@ -5425,37 +5475,11 @@ function glossaryTermSchema(el, loc) {
     termName = h1 ? h1.textContent.replace(/\s+/g, " ").trim() : document.title;
   }
 
-  const page = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "@id": url + "#webpage",
-    name: document.title,
-    url: url,
-    inLanguage: loc.lang,
-    isPartOf: set,
-    about: { "@id": termId },
-    mainEntity: { "@id": termId },
-    publisher: GLOSSARY_ORG,
-  };
-
-  const reviewerName = glossaryAttr(el, "data-glossary-reviewer-name");
-  if (reviewerName) {
-    const person = { "@type": "Person", name: reviewerName, worksFor: GLOSSARY_ORG };
-    const role = glossaryAttr(el, "data-glossary-reviewer-role");
-    const image = glossaryAttr(el, "data-glossary-reviewer-image");
-    const linkedin = glossaryAttr(el, "data-glossary-reviewer-linkedin");
-    if (role) person.jobTitle = role;
-    if (/^https?:\/\//.test(image)) person.image = image;
-    if (/^https?:\/\//.test(linkedin)) {
-      person.url = linkedin;
-      person.sameAs = [linkedin];
-    }
-    page.reviewedBy = person;
+  if (!hasPage) {
+    const page = { "@context": "https://schema.org", "@type": "WebPage" };
+    fixPage(page);
+    glossaryAddSchema(page);
   }
-  const reviewed = glossaryIsoDate(glossaryAttr(el, "data-glossary-last-reviewed"));
-  if (reviewed) page.lastReviewed = reviewed;
-
-  glossaryAddSchema(page);
   glossaryAddSchema(
     glossaryBreadcrumb([
       { name: loc.homeLabel, url: glossaryUrl(loc.prefix + "/") },
