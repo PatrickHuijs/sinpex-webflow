@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.40.0 | built 2026-11-18 */
+/*! Sinpex Webflow scripts v1.40.1 | built 2026-11-18 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -5693,6 +5693,7 @@ function initGlossaryAutolink() {
  *                                         ignoring case and accents
  *   [data-glossary-count]                 shows the number of matching terms
  *   [data-glossary-search-clear]          button that empties the search (shown by CSS while the input has text)
+ *   [data-glossary-empty]                 box shown when no term matches the search or category
  *   [data-glossary-more]                  wrapper of the Load more button; shows 20 more terms per click
  *   [data-glossary-item] a.glossary_item-link  full-item link; its href is set from data-glossary-slug
  *
@@ -5750,6 +5751,7 @@ function initGlossaryFilter() {
   const search = root.querySelector("[data-glossary-search]");
   const clear = root.querySelector("[data-glossary-search-clear]");
   const more = root.querySelector("[data-glossary-more]");
+  const empty = root.querySelector("[data-glossary-empty]");
   let limit = GLOSSARY_PAGE_SIZE;
 
   // Attribute texts can't be localized in Webflow: set the German ones here
@@ -5791,6 +5793,7 @@ function initGlossaryFilter() {
     });
     if (countEl) countEl.textContent = String(matches);
     if (more) more.style.display = matches > limit ? "" : "none";
+    if (empty) empty.style.display = matches === 0 && items.length ? "block" : "";
   }
 
   function setCategory(value) {
