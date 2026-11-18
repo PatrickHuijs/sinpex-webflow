@@ -10,7 +10,9 @@
  *                                         ignoring case and accents
  *   [data-glossary-count]                 shows the number of visible terms
  *
- * Terms are sorted A to Z in the page's language (the CMS list sort can't be relied on). Category buttons without
+ * On /de the search placeholder and the aria-labels are set in German (attributes can't be localized in Webflow).
+ * Terms are sorted A to Z in the page's language and category buttons by data-glossary-order (the CMS list sort
+ * can't be relied on). Category buttons without
  * terms are hidden. The active button gets .is-active and aria-pressed="true". Listeners are removed through
  * pageCleanups on a Barba page change.
  */
@@ -47,8 +49,28 @@ function initGlossaryFilter() {
 
   const buttons = Array.from(root.querySelectorAll("[data-glossary-filter]"));
   const search = root.querySelector("[data-glossary-search]");
+
+  // Attribute texts can't be localized in Webflow: set the German ones here
+  if (lang === "de") {
+    if (search) {
+      search.setAttribute("placeholder", "Suchen");
+      search.setAttribute("aria-label", "Begriffe durchsuchen");
+    }
+    const group = root.querySelector("[data-glossary-filters]");
+    if (group) group.setAttribute("aria-label", "Begriffe nach Kategorie filtern");
+  }
   const countEl = root.querySelector("[data-glossary-count]");
   let activeCategory = "all";
+
+  // Category buttons in the Order field's order (data-glossary-order); the CMS list sort can't be relied on
+  const ordered = buttons.filter((b) => b.hasAttribute("data-glossary-order"));
+  ordered
+    .slice()
+    .sort((a, b) => (parseFloat(a.getAttribute("data-glossary-order")) || 0) - (parseFloat(b.getAttribute("data-glossary-order")) || 0))
+    .forEach((button) => {
+      const row = button.closest(".w-dyn-item") || button;
+      if (row.parentNode) row.parentNode.appendChild(row);
+    });
 
   // Hide categories that have no terms (yet)
   buttons.forEach((button) => {

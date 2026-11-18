@@ -3,7 +3,8 @@
  *
  * Links the first mention of each glossary term in an article to its term page. The term list comes from the glossary
  * overview page in the page's language (/glossary or /de/glossary): every [data-glossary-item] with
- * data-glossary-name, optional data-glossary-aka (abbreviations or synonyms, comma separated) and a link to the term.
+ * data-glossary-name, optional data-glossary-aka (abbreviations or synonyms, comma separated) and data-glossary-slug
+ * (the link goes to /glossary/{slug}, or /de/glossary/{slug}; without a slug the item's first <a href> is used).
  * The list is cached for an hour in sessionStorage, so it's fetched once per visit.
  *
  * Matching: whole words only. Names match regardless of case; abbreviations in capitals (e.g. UBO, KYB) only in
@@ -24,7 +25,7 @@ function glossaryEscape(text) {
 }
 
 function glossaryFetchTerms(prefix) {
-  const key = "sx-glossary" + (prefix || "-en");
+  const key = "sx-glossary-v2" + (prefix || "-en");
   try {
     const cached = JSON.parse(sessionStorage.getItem(key) || "null");
     if (cached && Date.now() - cached.at < GLOSSARY_CACHE_MS) return Promise.resolve(cached.terms);
@@ -37,10 +38,11 @@ function glossaryFetchTerms(prefix) {
       const terms = [];
       doc.querySelectorAll("[data-glossary-item]").forEach((item) => {
         const link = item.matches("a[href]") ? item : item.querySelector("a[href]");
-        if (!link) return;
-        const name = (item.getAttribute("data-glossary-name") || link.textContent).replace(/\s+/g, " ").trim();
+        const slug = (item.getAttribute("data-glossary-slug") || "").trim();
+        if (!slug && !link) return;
+        const name = (item.getAttribute("data-glossary-name") || (link ? link.textContent : "")).replace(/\s+/g, " ").trim();
         const aka = (item.getAttribute("data-glossary-aka") || "").split(",").map((s) => s.trim()).filter(Boolean);
-        const href = new URL(link.getAttribute("href"), window.location.href).pathname;
+        const href = slug ? prefix + "/glossary/" + slug : new URL(link.getAttribute("href"), window.location.href).pathname;
         if (name) terms.push({ name: name, aka: aka, href: href });
       });
       try {

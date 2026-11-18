@@ -14,8 +14,8 @@
  * Overview page (an element with data-glossary-list containing [data-glossary-item] items):
  *   - adds a DefinedTermSet with every term as hasDefinedTerm (name, url, description, alternateName);
  *   - adds a BreadcrumbList: Home > Glossary.
- *   Per item: data-glossary-name, data-glossary-description, data-glossary-aka (optional), and a link to the term
- *   (the item itself or the first <a href> inside it).
+ *   Per item: data-glossary-name, data-glossary-description, data-glossary-aka (optional) and data-glossary-slug
+ *   (the term URL is /glossary/{slug}, or /de/glossary/{slug}); without a slug the item's first <a href> is used.
  *
  * EN or DE comes from <html lang>. Runs on the first page load only: Barba does not swap the <head>, and crawlers
  * always load a page directly. No CSS.
@@ -158,8 +158,9 @@ function glossaryOverviewSchema(list, loc) {
   list.querySelectorAll("[data-glossary-item]").forEach((item) => {
     const link = item.matches("a[href]") ? item : item.querySelector("a[href]");
     const name = glossaryAttr(item, "data-glossary-name") || (link ? link.textContent.replace(/\s+/g, " ").trim() : "");
-    if (!name || !link) return;
-    const termUrl = glossaryUrl(new URL(link.getAttribute("href"), window.location.href).pathname);
+    const slug = glossaryAttr(item, "data-glossary-slug");
+    if (!name || (!slug && !link)) return;
+    const termUrl = glossaryUrl(slug ? loc.prefix + "/glossary/" + slug : new URL(link.getAttribute("href"), window.location.href).pathname);
     const term = { "@type": "DefinedTerm", "@id": termUrl + "#term", name: name, url: termUrl };
     const description = glossaryAttr(item, "data-glossary-description");
     const aka = glossaryAttr(item, "data-glossary-aka");

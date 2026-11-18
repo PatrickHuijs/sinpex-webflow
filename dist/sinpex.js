@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.39.0 | built 2026-11-18 */
+/*! Sinpex Webflow scripts v1.39.1 | built 2026-11-18 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -5327,8 +5327,8 @@ function initAnimateInview() {
  * Overview page (an element with data-glossary-list containing [data-glossary-item] items):
  *   - adds a DefinedTermSet with every term as hasDefinedTerm (name, url, description, alternateName);
  *   - adds a BreadcrumbList: Home > Glossary.
- *   Per item: data-glossary-name, data-glossary-description, data-glossary-aka (optional), and a link to the term
- *   (the item itself or the first <a href> inside it).
+ *   Per item: data-glossary-name, data-glossary-description, data-glossary-aka (optional) and data-glossary-slug
+ *   (the term URL is /glossary/{slug}, or /de/glossary/{slug}); without a slug the item's first <a href> is used.
  *
  * EN or DE comes from <html lang>. Runs on the first page load only: Barba does not swap the <head>, and crawlers
  * always load a page directly. No CSS.
@@ -5471,8 +5471,9 @@ function glossaryOverviewSchema(list, loc) {
   list.querySelectorAll("[data-glossary-item]").forEach((item) => {
     const link = item.matches("a[href]") ? item : item.querySelector("a[href]");
     const name = glossaryAttr(item, "data-glossary-name") || (link ? link.textContent.replace(/\s+/g, " ").trim() : "");
-    if (!name || !link) return;
-    const termUrl = glossaryUrl(new URL(link.getAttribute("href"), window.location.href).pathname);
+    const slug = glossaryAttr(item, "data-glossary-slug");
+    if (!name || (!slug && !link)) return;
+    const termUrl = glossaryUrl(slug ? loc.prefix + "/glossary/" + slug : new URL(link.getAttribute("href"), window.location.href).pathname);
     const term = { "@type": "DefinedTerm", "@id": termUrl + "#term", name: name, url: termUrl };
     const description = glossaryAttr(item, "data-glossary-description");
     const aka = glossaryAttr(item, "data-glossary-aka");
@@ -5518,7 +5519,8 @@ function initGlossarySchema() {
  *
  * Links the first mention of each glossary term in an article to its term page. The term list comes from the glossary
  * overview page in the page's language (/glossary or /de/glossary): every [data-glossary-item] with
- * data-glossary-name, optional data-glossary-aka (abbreviations or synonyms, comma separated) and a link to the term.
+ * data-glossary-name, optional data-glossary-aka (abbreviations or synonyms, comma separated) and data-glossary-slug
+ * (the link goes to /glossary/{slug}, or /de/glossary/{slug}; without a slug the item's first <a href> is used).
  * The list is cached for an hour in sessionStorage, so it's fetched once per visit.
  *
  * Matching: whole words only. Names match regardless of case; abbreviations in capitals (e.g. UBO, KYB) only in
@@ -5539,7 +5541,7 @@ function glossaryEscape(text) {
 }
 
 function glossaryFetchTerms(prefix) {
-  const key = "sx-glossary" + (prefix || "-en");
+  const key = "sx-glossary-v2" + (prefix || "-en");
   try {
     const cached = JSON.parse(sessionStorage.getItem(key) || "null");
     if (cached && Date.now() - cached.at < GLOSSARY_CACHE_MS) return Promise.resolve(cached.terms);
@@ -5552,10 +5554,11 @@ function glossaryFetchTerms(prefix) {
       const terms = [];
       doc.querySelectorAll("[data-glossary-item]").forEach((item) => {
         const link = item.matches("a[href]") ? item : item.querySelector("a[href]");
-        if (!link) return;
-        const name = (item.getAttribute("data-glossary-name") || link.textContent).replace(/\s+/g, " ").trim();
+        const slug = (item.getAttribute("data-glossary-slug") || "").trim();
+        if (!slug && !link) return;
+        const name = (item.getAttribute("data-glossary-name") || (link ? link.textContent : "")).replace(/\s+/g, " ").trim();
         const aka = (item.getAttribute("data-glossary-aka") || "").split(",").map((s) => s.trim()).filter(Boolean);
-        const href = new URL(link.getAttribute("href"), window.location.href).pathname;
+        const href = slug ? prefix + "/glossary/" + slug : new URL(link.getAttribute("href"), window.location.href).pathname;
         if (name) terms.push({ name: name, aka: aka, href: href });
       });
       try {
@@ -5666,7 +5669,9 @@ function initGlossaryAutolink() {
  *                                         ignoring case and accents
  *   [data-glossary-count]                 shows the number of visible terms
  *
- * Terms are sorted A to Z in the page's language (the CMS list sort can't be relied on). Category buttons without
+ * On /de the search placeholder and the aria-labels are set in German (attributes can't be localized in Webflow).
+ * Terms are sorted A to Z in the page's language and category buttons by data-glossary-order (the CMS list sort
+ * can't be relied on). Category buttons without
  * terms are hidden. The active button gets .is-active and aria-pressed="true". Listeners are removed through
  * pageCleanups on a Barba page change.
  */
@@ -5703,8 +5708,28 @@ function initGlossaryFilter() {
 
   const buttons = Array.from(root.querySelectorAll("[data-glossary-filter]"));
   const search = root.querySelector("[data-glossary-search]");
+
+  // Attribute texts can't be localized in Webflow: set the German ones here
+  if (lang === "de") {
+    if (search) {
+      search.setAttribute("placeholder", "Suchen");
+      search.setAttribute("aria-label", "Begriffe durchsuchen");
+    }
+    const group = root.querySelector("[data-glossary-filters]");
+    if (group) group.setAttribute("aria-label", "Begriffe nach Kategorie filtern");
+  }
   const countEl = root.querySelector("[data-glossary-count]");
   let activeCategory = "all";
+
+  // Category buttons in the Order field's order (data-glossary-order); the CMS list sort can't be relied on
+  const ordered = buttons.filter((b) => b.hasAttribute("data-glossary-order"));
+  ordered
+    .slice()
+    .sort((a, b) => (parseFloat(a.getAttribute("data-glossary-order")) || 0) - (parseFloat(b.getAttribute("data-glossary-order")) || 0))
+    .forEach((button) => {
+      const row = button.closest(".w-dyn-item") || button;
+      if (row.parentNode) row.parentNode.appendChild(row);
+    });
 
   // Hide categories that have no terms (yet)
   buttons.forEach((button) => {
