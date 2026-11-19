@@ -50,7 +50,8 @@ function initPageScripts() {
     initAnimateInview,
     initGlossarySchema,
     initGlossaryAutolink,
-    initGlossaryFilter
+    initGlossaryFilter,
+    initGlossaryTermLinks
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();

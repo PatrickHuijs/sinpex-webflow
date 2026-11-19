@@ -1,4 +1,4 @@
-/*! Sinpex Webflow scripts v1.40.1 | built 2026-11-18 */
+/*! Sinpex Webflow scripts v1.41.0 | built 2026-11-19 */
 
 /* ===== src/core/gsap-setup.js ===== */
 /*
@@ -5845,6 +5845,37 @@ function initGlossaryFilter() {
   });
 }
 
+/*
+ * Glossary term page: related links.
+ *
+ * Hooks (on the term template):
+ *   [data-glossary-term-slug]       related term link; href becomes /glossary/<slug> (/de/glossary/... on DE)
+ *   [data-glossary-resource-slug]   related resource link; href becomes /resources/<slug>, or the item's
+ *                                   External link (data-glossary-resource-url) in a new tab when that is filled
+ * Webflow can't link a nested collection item to its own page through the API, so the hrefs are set here.
+ */
+function initGlossaryTermLinks() {
+  const links = document.querySelectorAll("[data-glossary-term-slug], [data-glossary-resource-slug]");
+  if (!links.length) return;
+  const prefix = /^\/de(\/|$)/.test(location.pathname) ? "/de" : "";
+  links.forEach((link) => {
+    const termSlug = link.getAttribute("data-glossary-term-slug");
+    if (termSlug) {
+      link.setAttribute("href", prefix + "/glossary/" + termSlug);
+      return;
+    }
+    const external = (link.getAttribute("data-glossary-resource-url") || "").trim();
+    if (external) {
+      link.setAttribute("href", external);
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener");
+      return;
+    }
+    const slug = link.getAttribute("data-glossary-resource-slug");
+    if (slug) link.setAttribute("href", prefix + "/resources/" + slug);
+  });
+}
+
 
 /* ===== src/core/master-init.js ===== */
 /*
@@ -5899,7 +5930,8 @@ function initPageScripts() {
     initAnimateInview,
     initGlossarySchema,
     initGlossaryAutolink,
-    initGlossaryFilter
+    initGlossaryFilter,
+    initGlossaryTermLinks
   ].forEach(safeInit);
 
   ScrollTrigger.refresh();
