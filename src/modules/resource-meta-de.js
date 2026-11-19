@@ -5,7 +5,8 @@
  *         featured resource, the resource hero and related resources.
  * - German = <html lang> starts with "de". Language changes are full page loads (core/barba.js).
  * - Type: Article, Webinar, Success Story, Event → Artikel, Webinar, Success Story, Event (unknown values stay as they are).
- * - Date: "November 10, 2026" (or "2026-11-10") → "10. November 2026". Anything it can't read stays as it is.
+ * - Date: "November 10, 2026", "Mai 4, 2026" (Webflow now outputs German month names in the DE locale, still in US order)
+ *   or "2026-11-10" → "10. November 2026". Anything it can't read stays as it is.
  * - The English value is kept in the attribute (data-resource-type="Article", data-resource-date="November 10, 2026"),
  *   so the filter tabs (resource-library.js) and the webinar status (webinar-slider.js) keep working on German pages.
  * - Runs once per element, so a second init after a Barba swap changes nothing.
@@ -26,9 +27,11 @@ function initResourceMetaDe() {
 
   function germanDate(text) {
     const t = (text || "").trim();
-    let m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+    let m = t.match(/^([^\s\d,.]+)\s+(\d{1,2}),?\s+(\d{4})$/);
     if (m) {
-      const month = MONTHS_EN.indexOf(m[1].toLowerCase());
+      const name = m[1].toLowerCase();
+      let month = MONTHS_EN.indexOf(name);
+      if (month < 0) month = MONTHS_DE.findIndex((de) => de.toLowerCase() === name);
       if (month > -1) return m[2] + ". " + MONTHS_DE[month] + " " + m[3];
     }
     m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);

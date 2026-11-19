@@ -22,6 +22,8 @@ function initWebinarSlider() {
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  // German month names (Webflow outputs them in the DE locale): only the ones whose start differs from English
+  const MONTHS_DE = { "märz": 2, "mai": 4, "okt": 9, "dez": 11 };
 
   // Returns a local Date at midnight, or null when the text can't be read
   function parseDay(text) {
@@ -29,7 +31,11 @@ function initWebinarSlider() {
     if (!t) return null;
     let m = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-    const monthIndex = MONTHS.findIndex((name) => new RegExp("\\b" + name).test(t));
+    let monthIndex = MONTHS.findIndex((name) => new RegExp("\\b" + name).test(t));
+    if (monthIndex < 0) {
+      const de = Object.keys(MONTHS_DE).find((name) => new RegExp("(^|\\s)" + name).test(t));
+      if (de) monthIndex = MONTHS_DE[de];
+    }
     const year = t.match(/\b(\d{4})\b/);
     if (monthIndex > -1 && year) {
       const day = t.replace(year[0], "").match(/\b(\d{1,2})(?:st|nd|rd|th)?\b/);
